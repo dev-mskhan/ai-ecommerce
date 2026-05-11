@@ -1,0 +1,17 @@
+import type { Request, Response, NextFunction } from "express";
+import ApiError from "../utils/apiError";
+import { JwtPayload, verifyAccessToken } from "../utils/generateToken";
+
+const authHandler = (req: Request, res: Response, next: NextFunction) => {
+    const token = req.signedCookies?.access_token;
+    if (!token) throw new ApiError(401, "Unauthorized");
+    try {
+        const user = verifyAccessToken(token) as JwtPayload;
+        (req as Request & { user: JwtPayload }).user = user;
+        next();
+    } catch (error) {
+        next(new ApiError(401, "Unauthorized"));
+    }
+};
+
+export default authHandler;
