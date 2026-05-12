@@ -14,4 +14,13 @@ const authHandler = (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+    const token = req.signedCookies?.access_token;
+    if (!token) return next();
+    try {
+        const user = verifyAccessToken(token) as JwtPayload;
+        (req as any).user = user;
+    } catch { }
+    next();
+};
 export default authHandler;

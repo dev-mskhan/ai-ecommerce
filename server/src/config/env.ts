@@ -28,6 +28,13 @@ const env = {
 
   // sentry
   sentryDsn: requiredEnv("SENTRY_DSN"),
+
+  // cloudinary
+  cloudinaryCloudName: requiredEnv("CLOUDINARY_CLOUD_NAME"),
+  cloudinaryApiKey: requiredEnv("CLOUDINARY_API_KEY"),
+  cloudinaryApiSecret: requiredEnv("CLOUDINARY_API_SECRET"),
+  // gemini
+  geminiApiKey: requiredEnv("GEMINI_API_KEY"),
 };
 
 export default env;

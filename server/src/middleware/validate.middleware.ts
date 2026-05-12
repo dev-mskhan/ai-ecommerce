@@ -13,7 +13,6 @@ const validateRequest = (schema: ZodSchema, source: Source = "body") =>
                 .join(", ");
             return next(new ApiError(422, message));
         }
-        req.body = source === "body" ? result.data : req.body;
         (req as any)[source] = result.data;
         next();
     };

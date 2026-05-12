@@ -50,9 +50,13 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     user.isVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpires = undefined;
+    const payload = createJwtPayload(user);
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+    user.refreshToken = refreshToken;
     await user.save();
-
-    res.json(new ApiResponse(200, null, "Email verified successfully"));
+    attachCookieToResponse(res, accessToken, refreshToken);
+    res.json(new ApiResponse(200, user, "Email verified successfully"));
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
