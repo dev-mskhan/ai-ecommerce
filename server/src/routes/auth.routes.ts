@@ -1,6 +1,6 @@
 import { Router } from "express";
 import validateRequest from "../middleware/validate.middleware";
-import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/user.validator";
+import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
 import { signup, login, verifyEmail, logout, refreshAccessToken, forgotPassword, resetPassword } from "../controllers/auth.controller";
 import authHandler from "../middleware/auth.middleware";
 

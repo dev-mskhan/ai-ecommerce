@@ -1,0 +1,303 @@
+signup:
+  post:
+    tags: [Auth]
+    summary: Register a new user
+    description: Creates a new account and sends a verification email. User cannot login until email is verified.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, email, password]
+            properties:
+              name:
+                type: string
+                example: "John Doe"
+              email:
+                type: string
+                format: email
+                example: "john@example.com"
+              password:
+                type: string
+                minLength: 8
+                example: "securepassword123"
+          example:
+            name: "John Doe"
+            email: "john@example.com"
+            password: "securepassword123"
+    responses:
+      '201':
+        description: Signup successful — verification email sent
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data: null
+              message: "Signup successful. Please verify your email."
+      '400':
+        description: Validation failed
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Validation failed"
+              errors:
+                - field: "email"
+                  message: "Invalid email format"
+      '409':
+        description: Email already in use
+        content:
+          application/json:
+            example:
+              statusCode: 409
+              data: null
+              message: "Email already in use"
+
+login:
+  post:
+    tags: [Auth]
+    summary: Login
+    description: |
+      Authenticates user and returns tokens.
+      - `access_token` is set as a signed HTTP-only cookie
+      - `refresh_token` is set as a signed HTTP-only cookie
+      - Both cookies are httpOnly and not accessible via JavaScript
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [email, password]
+            properties:
+              email:
+                type: string
+                format: email
+                example: "john@example.com"
+              password:
+                type: string
+                example: "securepassword123"
+          example:
+            email: "john@example.com"
+            password: "securepassword123"
+    responses:
+      '200':
+        description: Login successful — tokens set in cookies
+        headers:
+          Set-Cookie:
+            description: Sets access_token and refresh_token as signed httpOnly cookies
+            schema:
+              type: string
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                name: "John Doe"
+                email: "john@example.com"
+                role: "customer"
+                isVerified: true
+              message: "Login successful"
+      '401':
+        description: Invalid credentials
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              data: null
+              message: "Invalid email or password"
+      '403':
+        description: Email not verified or account banned
+        content:
+          application/json:
+            examples:
+              notVerified:
+                summary: Email not verified
+                value:
+                  statusCode: 403
+                  data: null
+                  message: "Please verify your email first"
+              banned:
+                summary: Account banned
+                value:
+                  statusCode: 403
+                  data: null
+                  message: "Your account has been banned"
+
+verify-email/{token}:
+  post:
+    tags: [Auth]
+    summary: Verify email address
+    description: |
+      Verifies the user's email using the token sent to their inbox.
+      On success, automatically logs the user in (sets auth cookies).
+      Token expires after 24 hours.
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "a3f9b2c1d4e5f6..."
+    responses:
+      '200':
+        description: Email verified — user is now logged in
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                email: "john@example.com"
+                isVerified: true
+              message: "Email verified successfully"
+      '400':
+        description: Token invalid or expired
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Invalid or expired verification token"
+
+logout:
+  post:
+    tags: [Auth]
+    summary: Logout
+    description: Clears the refresh_token cookie and invalidates it in the database. Requires authentication.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Logged out successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Logged out successfully"
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              data: null
+              message: "Unauthorized"
+refresh-access-token:
+  post:
+    tags: [Auth]
+    summary: Refresh access token
+    description: |
+      Uses the `refresh_token` cookie to issue a new access token and rotate the refresh token.
+      No request body needed — reads token from cookie.
+    responses:
+      '200':
+        description: Token refreshed — new cookies set
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Token refreshed"
+      '401':
+        description: No refresh token or invalid
+        content:
+          application/json:
+            examples:
+              missing:
+                summary: No cookie present
+                value:
+                  statusCode: 401
+                  data: null
+                  message: "No refresh token"
+              invalid:
+                summary: Token not found in DB
+                value:
+                  statusCode: 401
+                  data: null
+                  message: "Invalid refresh token"
+
+forgot-password:
+  post:
+    tags: [Auth]
+    summary: Request password reset
+    description: Sends a password reset link to the email. Link expires in 1 hour.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [email]
+            properties:
+              email:
+                type: string
+                format: email
+                example: "john@example.com"
+          example:
+            email: "john@example.com"
+    responses:
+      '200':
+        description: Reset email sent
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Password reset email sent"
+      '404':
+        description: No account with that email
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "No account with that email"
+
+reset-password/{token}:
+  patch:
+    tags: [Auth]
+    summary: Reset password
+    description: Resets the user's password using the token from the reset email. Token expires after 1 hour.
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "d4e5f6a3b2c1..."
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [password]
+            properties:
+              password:
+                type: string
+                minLength: 8
+                example: "newSecurePassword456"
+          example:
+            password: "newSecurePassword456"
+    responses:
+      '200':
+        description: Password reset successful
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Password reset successful"
+      '400':
+        description: Token invalid or expired
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Invalid or expired reset token"

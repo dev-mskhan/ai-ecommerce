@@ -1,0 +1,318 @@
+create-order:
+  post:
+    tags: [Orders]
+    summary: Place a new order
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [items, shippingAddress, paymentMethod]
+            properties:
+              items:
+                type: array
+                items:
+                  type: object
+                  required: [product, quantity]
+                  properties:
+                    product:
+                      type: string
+                      example: "64abc123def456789abc1234"
+                    quantity:
+                      type: integer
+                      example: 2
+                    selectedVariants:
+                      type: object
+                      additionalProperties:
+                        type: string
+                      example: { size: "M", color: "red" }
+              shippingAddress:
+                type: object
+                properties:
+                  street:
+                    type: string
+                  city:
+                    type: string
+                  country:
+                    type: string
+              paymentMethod:
+                type: string
+                enum: [cod, card]
+                example: "cod"
+              couponCode:
+                type: string
+                example: "SAVE20"
+    responses:
+      '201':
+        description: Order placed
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data:
+                _id: "64order123"
+                status: "pending"
+                subtotal: 150
+                discount: 30
+                total: 120
+              message: "Order placed successfully"
+      '400':
+        description: Unavailable product, insufficient stock, or invalid coupon
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Insufficient stock for \"Nike Air Max\""
+
+get-my-orders:
+  get:
+    tags: [Orders]
+    summary: Get logged-in buyer's orders
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+      - name: page
+        in: query
+        schema:
+          type: integer
+          example: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          example: 10
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+          example: "createdAt"
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+    responses:
+      '200':
+        description: Orders fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                orders: []
+                total: 5
+                page: 1
+                totalPages: 1
+              message: "Orders fetched"
+
+get-order-by-id:
+  get:
+    tags: [Orders]
+    summary: Get order by ID (buyer, vendor, or admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Order fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64order123"
+                status: "pending"
+                items: []
+              message: "Order fetched"
+      '403':
+        description: Forbidden
+      '404':
+        description: Order not found
+
+update-order-status:
+  post:
+    tags: [Orders]
+    summary: Update order status (vendor or admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [pending, confirmed, shipped, delivered, cancelled]
+                example: "shipped"
+              note:
+                type: string
+                example: "Dispatched via DHL"
+    responses:
+      '200':
+        description: Status updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64order123"
+                status: "shipped"
+              message: "Order status updated"
+      '403':
+        description: Forbidden
+      '404':
+        description: Order not found
+
+cancel-order:
+  post:
+    tags: [Orders]
+    summary: Cancel an order (buyer)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason:
+                type: string
+                example: "Changed my mind"
+    responses:
+      '200':
+        description: Order cancelled
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64order123"
+                status: "cancelled"
+              message: "Order cancelled"
+      '400':
+        description: Cannot cancel in current status
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Cannot cancel an order in \"shipped\" status"
+      '403':
+        description: Forbidden
+
+get-vendor-orders:
+  get:
+    tags: [Orders - Vendor]
+    summary: Get orders containing vendor's products
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+    responses:
+      '200':
+        description: Vendor orders fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                orders: []
+                total: 3
+                page: 1
+                totalPages: 1
+              message: "Vendor orders fetched"
+
+get-all-orders:
+  get:
+    tags: [Orders - Admin]
+    summary: Get all orders (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        schema:
+          type: integer
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+    responses:
+      '200':
+        description: All orders fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                orders: []
+                total: 50
+                page: 1
+                totalPages: 5
+              message: "All orders fetched"

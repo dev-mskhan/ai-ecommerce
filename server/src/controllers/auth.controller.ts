@@ -6,7 +6,7 @@ import ApiResponse from "../utils/apiResponse";
 import crypto from "crypto";
 import { sendEmail } from "../services/email.service";
 import env from "../config/env";
-import { attachCookieToResponse, generateAccessToken, generateRefreshToken, createJwtPayload, type JwtPayload } from "../utils/generateToken";
+import { attachCookieToResponse, generateAccessToken, generateRefreshToken, createJwtPayload } from "../utils/generateToken";
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
     const { name, email, password } = req.body;

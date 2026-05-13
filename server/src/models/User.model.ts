@@ -22,10 +22,9 @@ export interface IUser extends Document {
     storeDescription?: string;
     storeAvatar?: string;
     isApproved: boolean;
-
+    rejectReason?: string;
+    percentageCut?: number;
     comparePassword(candidatePassword: string): Promise<boolean>;
-    createdAt: Date;
-    updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -48,6 +47,8 @@ const userSchema = new Schema<IUser>(
         storeDescription: { type: String },
         storeAvatar: { type: String },
         isApproved: { type: Boolean, default: false },
+        rejectReason: { type: String },
+        percentageCut: { type: Number, default: 5 },
     },
     { timestamps: true }
 );
@@ -66,7 +67,7 @@ userSchema.methods.comparePassword = async function (candidatePassword: string) 
 // Remove sensitive fields from JSON
 userSchema.set("toJSON", {
     transform: (_doc, ret) => {
-        const { password, refreshToken, passwordResetToken, emailVerificationToken, ...rest } = ret;
+        const { password, refreshToken, passwordResetToken, emailVerificationToken, percentageCut, ...rest } = ret;
         return rest;
     },
 });

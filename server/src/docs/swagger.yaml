@@ -1,0 +1,146 @@
+openapi: 3.0.0
+info:
+  title: Multi-Vendor E-Commerce API
+  version: 1.0.0
+  description: |
+    ## Authentication
+
+    This API uses **HTTP-only signed cookies** for auth — not Authorization headers.
+
+    ### Full Auth Flow:
+    1. POST /auth/signup                  → account created, verification email sent
+    2. POST /auth/verify-email/:token     → email verified, logged in automatically
+    3. POST /auth/login                   → access_token + refresh_token set as cookies
+    4. (use protected routes)             → cookies sent automatically by browser
+    5. POST /auth/refresh-access-token    → get new tokens when access expires
+    6. POST /auth/logout                  → cookies cleared, token invalidated in DB
+    
+    ### Password Reset Flow:
+    1. POST /auth/forgot-password   → reset email sent (expires 1hr)
+    2. PATCH /auth/reset-password/:token → new password set
+    
+    ### Cookie Details:
+    | Cookie | httpOnly | Signed | Expiry |
+    |--------|----------|--------|--------|
+    | access_token | ✅ | ✅ | 15min |
+    | refresh_token | ✅ | ✅ | 7 days |
+
+    > Cookies are set automatically on login and verify-email.
+    > You do not need to manually handle tokens on the frontend.
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Auth
+    description: Registration, login, email verification, and password reset
+  - name: Products
+    description: Product management
+  - name: Products - Vendor
+    description: Product management for vendors
+  - name: Products - Admin
+    description: Product management for admins
+  - name: Categories
+    description: Category management
+  - name: Chat
+    description: AI-powered chat with optional auth
+  - name: Coupons
+    description: Coupon management and validation
+  - name: Orders
+    description: Order placement and management for buyers
+  - name: Orders - Vendor
+    description: Vendor order management
+  - name: Orders - Admin
+    description: Admin order management
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+
+paths:
+  # Auth Routes
+  /auth/signup:
+    $ref: ./paths/auth.yaml#/signup
+  /auth/login:
+    $ref: ./paths/auth.yaml#/login
+  /auth/verify-email/{token}:
+    $ref: ./paths/auth.yaml#/verify-email~1{token}
+  /auth/logout:
+    $ref: ./paths/auth.yaml#/logout
+  /auth/refresh-access-token:
+    $ref: ./paths/auth.yaml#/refresh-access-token
+  /auth/forgot-password:
+    $ref: ./paths/auth.yaml#/forgot-password
+  /auth/reset-password/{token}:
+    $ref: ./paths/auth.yaml#/reset-password~1{token}
+  # Products - Public
+  /products:
+    $ref: ./paths/product.yaml#/get-products
+  /products/{slug}:
+    $ref: ./paths/product.yaml#/get-product-by-slug
+
+  # Products - Vendor
+  /products/vendor/my-products:
+    $ref: ./paths/product.yaml#/vendor-products
+  /products/{id}:
+    $ref: ./paths/product.yaml#/update-product
+  /products/{id}/toggle:
+    $ref: ./paths/product.yaml#/toggle-product-status
+
+  # Products - Admin
+  /products/admin/{id}:
+    $ref: ./paths/product.yaml#/admin-delete-product
+  /products/admin/{id}/feature:
+    $ref: ./paths/product.yaml#/toggle-featured-product
+  # Categories - Public
+  /categories:
+    get:
+      $ref: ./paths/category.yaml#/get-categories/get
+    post:
+      $ref: ./paths/category.yaml#/create-category/post
+  /categories/{id}:
+    get:
+      $ref: ./paths/category.yaml#/get-category-by-id/get
+    patch:
+      $ref: ./paths/category.yaml#/update-category/patch
+    delete:
+      $ref: ./paths/category.yaml#/delete-category/delete
+  /categories/{id}/toggle:
+    $ref: ./paths/category.yaml#/toggle-category-status
+  # Chat
+  /chat/send:
+    $ref: ./paths/chat.yaml#/send-message
+  /chat:
+    $ref: ./paths/chat.yaml#/get-user-chats
+  /chat/{chatId}:
+    get:
+      $ref: ./paths/chat.yaml#/get-chat-history/get
+    delete:
+      $ref: ./paths/chat.yaml#/delete-chat/delete
+  # Coupons
+  /coupons/apply:
+    $ref: ./paths/coupon.yaml#/apply-coupon
+  /coupons/create:
+    $ref: ./paths/coupon.yaml#/create-coupon
+  /coupons/get:
+    $ref: ./paths/coupon.yaml#/get-all-coupons
+  /coupons/toggle/{id}:
+    $ref: ./paths/coupon.yaml#/toggle-coupon
+  /coupons/delete/{id}:
+    $ref: ./paths/coupon.yaml#/delete-coupon
+  # Orders
+  /orders/create:
+    $ref: ./paths/order.yaml#/create-order
+  /orders/get:
+    $ref: ./paths/order.yaml#/get-my-orders
+  /orders/get/{id}:
+    $ref: ./paths/order.yaml#/get-order-by-id
+  /orders/update/{id}:
+    $ref: ./paths/order.yaml#/update-order-status
+  /orders/cancel/{id}:
+    $ref: ./paths/order.yaml#/cancel-order
+  /orders/vendor:
+    $ref: ./paths/order.yaml#/get-vendor-orders
+  /orders/admin:
+    $ref: ./paths/order.yaml#/get-all-orders

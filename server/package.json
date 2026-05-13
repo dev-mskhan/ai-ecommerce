@@ -4,9 +4,10 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --include src/**/*.ts src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "swagger:build": "swagger-cli bundle src/docs/swagger.yaml -o src/docs/bundle.yaml"
   },
   "keywords": [],
   "author": "",
@@ -62,6 +63,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.14",
+    "swagger-merger": "^1.5.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"

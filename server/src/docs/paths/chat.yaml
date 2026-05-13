@@ -1,0 +1,117 @@
+send-message:
+  post:
+    tags: [Chat]
+    summary: Send a message (AI chat)
+    description: Sends a message to the AI. Auth is optional — guests can chat without logging in.
+    parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "Show me running shoes under $100"
+              chatId:
+                type: string
+                example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Message sent
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                chatId: "64abc123def456789abc1234"
+                reply: "Here are some running shoes under $100"
+                products: []
+              message: "Message sent"
+
+get-user-chats:
+  get:
+    tags: [Chat]
+    summary: Get all chats for logged-in user
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Chats fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123"
+                  createdAt: "2024-01-01T00:00:00.000Z"
+                  updatedAt: "2024-01-02T00:00:00.000Z"
+                  messages: []
+              message: "Chats fetched"
+      '401':
+        description: Unauthorized
+
+get-chat-history:
+  get:
+    tags: [Chat]
+    summary: Get a single chat with messages
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Chat fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                messages:
+                  - role: "user"
+                    content: "Show me shoes"
+                    products: []
+              message: "Chat fetched"
+      '404':
+        description: Chat not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Chat not found"
+
+delete-chat:
+  delete:
+    tags: [Chat]
+    summary: Delete a chat
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Chat deleted
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Chat deleted"

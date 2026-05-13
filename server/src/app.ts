@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 
 const app = express();
-const swaggerSpec = yaml.load(fs.readFileSync(path.join(__dirname, '../swagger.yaml'), 'utf8')) as JsonObject;
+const swaggerSpec = yaml.load(fs.readFileSync(path.join(__dirname, 'docs/bundle.yaml'), 'utf8')) as JsonObject;
 
 // Global middlewares
 app.use(cors(
@@ -30,7 +30,7 @@ app.use(pinoHttp({ logger }));
 
 // Routes
 app.use("/api/v1", router);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // handlers
 app.use((req, res, next) => {

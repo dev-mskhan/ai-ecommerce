@@ -21,6 +21,8 @@ export interface IProduct extends Document {
     ratings: { average: number; count: number };
     isActive: boolean;
     isFeatured: boolean;
+    isReported: boolean;
+    reportCount: number;
     seo: { metaTitle?: string; metaDescription?: string };
     embedding: number[];
 }
@@ -44,6 +46,8 @@ const productSchema = new Schema<IProduct>(
         },
         isActive: { type: Boolean, default: true },
         isFeatured: { type: Boolean, default: false },
+        isReported: { type: Boolean, default: false },
+        reportCount: { type: Number, default: 0 },
         seo: {
             metaTitle: String,
             metaDescription: String,
