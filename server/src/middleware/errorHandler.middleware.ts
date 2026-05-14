@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import mongoose from "mongoose";
-import ApiError from "../utils/apiError";
+import ApiError from "../utils/apiError.js";
 
 const errorHandler = (
     error: any,

@@ -1,6 +1,6 @@
 import multer from 'multer';
 import type { Request, Response, NextFunction } from 'express';
-import { parseJsonFields } from './parseJsonFields';
+import { parseJsonFields } from './parseJsonFields.js';
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const upload = multer({

@@ -8,11 +8,11 @@ import {
     getAllOrders,
     vendorUpdateOrderStatus,
     adminUpdateOrderStatus
-} from "../controllers/order.controller";
-import validateRequest from "../middleware/validate.middleware";
-import authHandler from "../middleware/auth.middleware";
-import { createOrderSchema, updateOrderStatusSchema, cancelOrderSchema, orderQuerySchema } from "../validators/order.validator";
-import roleCheck from "../middleware/roleCheck.middleware";
+} from "../controllers/order.controller.js";
+import validateRequest from "../middleware/validate.middleware.js";
+import authHandler from "../middleware/auth.middleware.js";
+import { createOrderSchema, updateOrderStatusSchema, cancelOrderSchema, orderQuerySchema } from "../validators/order.validator.js";
+import roleCheck from "../middleware/roleCheck.middleware.js";
 
 const router = Router();
 

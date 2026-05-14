@@ -1,6 +1,6 @@
 import cloudinary from 'cloudinary';
-import { Request } from 'express';
-import env from '../config/env';
+import type { Request } from 'express';
+import env from '../config/env.js';
 const CloudinaryConfig = cloudinary.v2;
 
 CloudinaryConfig.config({
@@ -37,7 +37,7 @@ export const deleteCloudinaryImage = async (publicId: string): Promise<void> => 
 };
 export const extractPublicId = (url: string): string => {
     const parts = url.split('/');
-    const filename = parts[parts.length - 1].split('.')[0];
+    const filename = parts[parts?.length - 1]?.split('.')[0];
     const folder = parts.slice(-3, -1).join('/');
     return `${folder}/${filename}`;
 };

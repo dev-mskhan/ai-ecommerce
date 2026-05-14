@@ -19,8 +19,8 @@ router.get("/:slug", getProductBySlug);
 
 // vendor routes
 router.get("/vendor/my-products", authHandler, roleCheck("vendor"), getVendorProducts);
-router.post("/", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(createProductSchema), createProduct);
-router.patch("/:id", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(updateProductSchema), updateProduct);
+router.post("/", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(createProductSchema, "body"), createProduct);
+router.patch("/:id", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(updateProductSchema, "body"), updateProduct);
 router.delete("/:id", authHandler, roleCheck("vendor"), deleteProduct);
 router.patch("/:id/toggle", authHandler, roleCheck("vendor"), toggleProductStatus);
 

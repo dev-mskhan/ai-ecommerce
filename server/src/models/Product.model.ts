@@ -63,7 +63,12 @@ productSchema.pre("save", function () {
     }
     return;
 });
-
+productSchema.set("toJSON", {
+    transform: (_doc, ret) => {
+        const { embedding, __v, ...rest } = ret;
+        return rest;
+    },
+});
 productSchema.index({ name: "text", description: "text", tags: "text" });
 productSchema.index({ vendor: 1, isActive: 1 });
 productSchema.index({ category: 1, isActive: 1 });

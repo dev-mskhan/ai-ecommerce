@@ -1,9 +1,9 @@
-import { Request, Response } from "express";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/apiError";
-import ApiResponse from "../utils/apiResponse";
-import Coupon from "../models/Coupon.model";
-import { CreateCouponInput, ApplyCouponInput } from "../validators/coupon.validator";
+import type { Request, Response } from "express";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import ApiResponse from "../utils/apiResponse.js";
+import Coupon from "../models/Coupon.model.js";
+import type { CreateCouponInput, ApplyCouponInput } from "../validators/coupon.validator.js";
 
 export const validateAndCalculateCoupon = async (
     { code, orderAmount }: ApplyCouponInput,

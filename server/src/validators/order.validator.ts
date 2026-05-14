@@ -43,8 +43,19 @@ export const orderQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).default(10),
     sortBy: z.enum(["createdAt", "total"]).default("createdAt"),
     order: z.enum(["asc", "desc"]).default("desc"),
-});      
+});
+export const paymentIntentSchema = z.object({
+    orderId: objectId,
+    currency: z.string().length(3).default("usd").optional(),
+});
 
+export const confirmPaymentSchema = z.object({
+    orderId: objectId,
+    paymentIntentId: z.string().startsWith("pi_"),
+});
+
+export type PaymentIntentInput = z.infer<typeof paymentIntentSchema>;
+export type ConfirmPaymentInput = z.infer<typeof confirmPaymentSchema>;
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import Product, { IProduct } from "../models/Product.model.js";
+import Product, { type IProduct } from "../models/Product.model.js";
 import Chat from "../models/Chat.model.js";
-import env from "../config/env";
+import env from "../config/env.js";
 
 const genAI = new GoogleGenAI({ apiKey: env.geminiApiKey });
 

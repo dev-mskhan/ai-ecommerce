@@ -1,12 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
-import asyncHandler from "../utils/asyncHandler";
-import User from "../models/User.model";
-import ApiError from "../utils/apiError";
-import ApiResponse from "../utils/apiResponse";
+import asyncHandler from "../utils/asyncHandler.js";
+import User from "../models/User.model.js";
+import ApiError from "../utils/apiError.js";
+import ApiResponse from "../utils/apiResponse.js";
 import crypto from "crypto";
-import { sendEmail } from "../services/email.service";
-import env from "../config/env";
-import { attachCookieToResponse, generateAccessToken, generateRefreshToken, createJwtPayload } from "../utils/generateToken";
+import { sendEmail } from "../services/email.service.js";
+import env from "../config/env.js";
+import { attachCookieToResponse, generateAccessToken, generateRefreshToken, createJwtPayload } from "../utils/generateToken.js";
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
     const { name, email, password } = req.body;
@@ -33,7 +33,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     });
 
     res.status(201).json(new ApiResponse(201, null, "Signup successful. Please verify your email."));
-});
+})
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const token = req.params.token as string;

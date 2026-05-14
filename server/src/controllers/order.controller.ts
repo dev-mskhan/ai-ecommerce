@@ -1,19 +1,20 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/apiError";
-import ApiResponse from "../utils/apiResponse";
-import Order from "../models/Order.model";
-import Product from "../models/Product.model";
-import Coupon from "../models/Coupon.model";
-import { JwtPayload } from "../utils/generateToken";
-import { validateAndCalculateCoupon } from "./coupon.controller";
-import {
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/apiError.js";
+import ApiResponse from "../utils/apiResponse.js";
+import Order from "../models/Order.model.js";
+import Product from "../models/Product.model.js";
+import Coupon from "../models/Coupon.model.js";
+import type { JwtPayload } from "../utils/generateToken.js";
+import { validateAndCalculateCoupon } from "./coupon.controller.js";
+import type {
     CreateOrderInput,
     UpdateOrderStatusInput,
     CancelOrderInput,
     OrderQueryInput,
 } from "../validators/order.validator.js";
+import { createPaymentIntent, stripe } from "../services/payment.service.js";
 
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
@@ -75,38 +76,66 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
         const tax = 0;
         const total = subtotal - discount + shippingCost + tax;
 
-        const [order] = await Order.create(
-            [
-                {
-                    buyer: buyerId,
-                    items: orderItems,
-                    shippingAddress: body.shippingAddress,
-                    subtotal,
-                    discount,
-                    shippingCost,
-                    tax,
-                    total,
-                    coupon: appliedCoupon?._id,
-                    couponCode: appliedCoupon?.code,
-                    paymentMethod: body.paymentMethod,
-                    paymentStatus: "unpaid",
-                    status: "pending",
-                    statusHistory: [{ status: "pending", changedAt: new Date() }],
-                },
-            ],
-            { session }
-        );
+        let paymentIntentId: string | undefined;
+        let clientSecret: string | null = null;
+
+        if (body.paymentMethod === "stripe") {
+            const intent = await createPaymentIntent(total, "usd", {
+                buyerId,
+            });
+            paymentIntentId = intent.id;
+            clientSecret = intent.client_secret;
+        }
+
+        const order = new Order({
+            buyer: buyerId,
+            items: orderItems,
+            shippingAddress: body.shippingAddress,
+            subtotal,
+            discount,
+            shippingCost,
+            tax,
+            total,
+            coupon: appliedCoupon?._id,
+            couponCode: appliedCoupon?.code,
+            paymentMethod: body.paymentMethod,
+            paymentIntentId,
+            paymentStatus: "unpaid",
+            status: "pending",
+            statusHistory: [{ status: "pending", changedAt: new Date() }],
+        });
+
+        await order.save({ session });
+
+        if (body.paymentMethod === "stripe" && paymentIntentId) {
+            await stripe.paymentIntents.update(paymentIntentId, {
+                metadata: { orderId: order._id.toString(), buyerId },
+            });
+        }
 
         for (const item of body.items) {
-            await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } }, { session });
+            await Product.findByIdAndUpdate(
+                item.product,
+                { $inc: { stock: -item.quantity } },
+                { session }
+            );
         }
 
         if (appliedCoupon) {
-            await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { usedCount: 1 } }, { session });
+            await Coupon.findByIdAndUpdate(
+                appliedCoupon._id,
+                { $inc: { usedCount: 1 } },
+                { session }
+            );
         }
 
         await session.commitTransaction();
-        res.status(201).json(new ApiResponse(201, order, "Order placed successfully"));
+
+        res.status(201).json(new ApiResponse(201, {
+            order,
+            ...(clientSecret && { clientSecret }),
+        }, "Order placed successfully"));
+
     } catch (err) {
         await session.abortTransaction();
         throw err;

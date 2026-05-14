@@ -1,16 +1,11 @@
 import { z } from "zod";
 
-export const signupSchema = z.object({
+export const signupSchemaBuyer = z.object({
     name: z.string().min(2, "Name must be at least 2 characters").max(50).trim(),
     email: z.string().email("Invalid email").toLowerCase().trim(),
     password: z.string()
         .min(6, "Password must be at least 6 characters")
         .regex(/[^a-zA-Z0-9]/, "Must contain a special character"),
-});
-
-export const vendorUpgradeSchema = z.object({
-    storeName: z.string().min(2, "Store name must be at least 2 characters").max(100).trim(),
-    storeDescription: z.string().max(500).trim().optional(),
 });
 
 export const loginSchema = z.object({
@@ -52,10 +47,9 @@ export const changePasswordSchema = z.object({
     { message: "Passwords do not match", path: ["confirmPassword"] }
 );
 
-export type SignupInput = z.infer<typeof signupSchema>;
+export type SignupBuyerInput = z.infer<typeof signupSchemaBuyer>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
-export type VendorUpgradeInput = z.infer<typeof vendorUpgradeSchema>;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.model.js";
-import { SearchProductInput } from "../validators/product.validator.js";
+import type { SearchProductInput } from "../validators/product.validator.js";
 import type { PipelineStage } from 'mongoose';
 
 export const searchProducts = async (params: SearchProductInput) => {

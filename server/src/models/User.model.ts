@@ -2,6 +2,13 @@ import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export type Role = "admin" | "vendor" | "buyer";
+export interface IAddress {
+    line: string;
+    city: string;
+    state: string;
+    postalCode?: string;
+    isDefault: boolean;
+}
 
 export interface IUser extends Document {
     name: string;
@@ -24,8 +31,22 @@ export interface IUser extends Document {
     isApproved: boolean;
     rejectReason?: string;
     percentageCut?: number;
+    phoneNumber?: string;
+    addresses?: IAddress[];
+    country?: string;
     comparePassword(candidatePassword: string): Promise<boolean>;
 }
+
+const addressSchema = new Schema<IAddress>(
+    {
+        line: { type: String, required: true, trim: true },
+        city: { type: String, required: true, trim: true },
+        state: { type: String, required: true, trim: true },
+        postalCode: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false },
+    },
+    { _id: false }
+);
 
 const userSchema = new Schema<IUser>(
     {
@@ -46,6 +67,9 @@ const userSchema = new Schema<IUser>(
         storeName: { type: String },
         storeDescription: { type: String },
         storeAvatar: { type: String },
+        phoneNumber: { type: String },
+        addresses: { type: [addressSchema], default: [] },
+        country: { type: String, default: "Pakistan", trim: true },
         isApproved: { type: Boolean, default: false },
         rejectReason: { type: String },
         percentageCut: { type: Number, default: 5 },
@@ -59,12 +83,10 @@ userSchema.pre("save", async function () {
     this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Compare password
 userSchema.methods.comparePassword = async function (candidatePassword: string) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove sensitive fields from JSON
 userSchema.set("toJSON", {
     transform: (_doc, ret) => {
         const { password, refreshToken, passwordResetToken, emailVerificationToken, percentageCut, ...rest } = ret;

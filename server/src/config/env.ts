@@ -12,7 +12,7 @@ const requiredEnv = (key: string): string => {
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT) || 3000,
-
+  redisUrl: requiredEnv("REDIS_URL"),
   mongoUri: requiredEnv("MONGO_URI"),
   jwtSecret: requiredEnv("JWT_SECRET"),
   jwtRefreshSecret: requiredEnv("JWT_REFRESH_SECRET"),
@@ -35,6 +35,9 @@ const env = {
   cloudinaryApiSecret: requiredEnv("CLOUDINARY_API_SECRET"),
   // gemini
   geminiApiKey: requiredEnv("GEMINI_API_KEY"),
+  // stripe
+  stripeSecretKey: requiredEnv("STRIPE_SECRET_KEY"),
+  stripeWebhookSecret: requiredEnv("STRIPE_WEBHOOK_SECRET"),
 };
 
 export default env;

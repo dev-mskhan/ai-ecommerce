@@ -1,4 +1,4 @@
-import { Response, NextFunction, Request } from "express";
+import type { Response, NextFunction, Request } from "express";
 
 type TAsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
 

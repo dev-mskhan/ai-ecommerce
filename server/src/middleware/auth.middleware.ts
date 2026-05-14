@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import ApiError from "../utils/apiError";
-import { JwtPayload, verifyAccessToken } from "../utils/generateToken";
+import ApiError from "../utils/apiError.js";
+import { type JwtPayload, verifyAccessToken } from "../utils/generateToken.js";
 
 const authHandler = (req: Request, res: Response, next: NextFunction) => {
     const token = req.signedCookies?.access_token;

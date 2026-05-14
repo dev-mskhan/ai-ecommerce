@@ -1,5 +1,6 @@
-import nodemailer, { Transporter } from "nodemailer";
-import env from "../config/env";
+import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
+import env from "../config/env.js";
 
 interface EmailOptions {
     to: string;

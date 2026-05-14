@@ -46,7 +46,7 @@ export interface IOrder extends Document {
     couponCode?: string;
     status: OrderStatus;
     paymentStatus: PaymentStatus;
-    paymentMethod: "stripe" | "mock" | "cod";
+    paymentMethod: "stripe" | "cod";
     paymentIntentId?: string;
     statusHistory: { status: OrderStatus; changedAt: Date; note?: string }[];
     deliveredAt?: Date;

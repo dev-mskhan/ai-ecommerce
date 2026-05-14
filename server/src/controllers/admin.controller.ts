@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import asyncHandler from "../utils/asyncHandler";
-import ApiResponse from "../utils/apiResponse";
-import ApiError from "../utils/apiError";
-import User from "../models/User.model";
-import Product from "../models/Product.model";
-import Order from "../models/Order.model";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiResponse from "../utils/apiResponse.js";
+import ApiError from "../utils/apiError.js";
+import User from "../models/User.model.js";
+import Product from "../models/Product.model.js";
+import Order from "../models/Order.model.js";
 
 export const approveVendor = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -46,7 +46,6 @@ export const getAllVendors = asyncHandler(async (req: Request, res: Response) =>
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const vendors = await User.find({ role: "vendor" })
-        .select("name email storeName storeAvatar isBanned isApproved")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)

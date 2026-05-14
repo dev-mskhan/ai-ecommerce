@@ -1,6 +1,6 @@
-import asyncHandler from "../utils/asyncHandler";
-import { Request, Response } from "express";
-import { JwtPayload } from "../utils/generateToken.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import type { Request, Response } from "express";
+import type { JwtPayload } from "../utils/generateToken.js";
 import User from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";

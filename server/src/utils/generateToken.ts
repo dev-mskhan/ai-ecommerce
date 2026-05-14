@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import env from "../config/env";
+import env from "../config/env.js";
 import type { Response } from "express";
-import type { IUser, Role } from "../models/User.model";
+import type { IUser, Role } from "../models/User.model.js";
 
 export interface JwtPayload {
     id: string;
@@ -11,6 +11,7 @@ export interface JwtPayload {
     avatar?: string;
     isVerified?: boolean;
     isApproved?: boolean;
+    isBanned?: boolean;
 }
 export const generateAccessToken = (payload: JwtPayload) =>
     jwt.sign(payload, env.jwtSecret, { expiresIn: "2h" });
