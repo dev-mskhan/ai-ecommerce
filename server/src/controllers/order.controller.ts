@@ -8,23 +8,17 @@ import Product from "../models/Product.model.js";
 import Coupon from "../models/Coupon.model.js";
 import type { JwtPayload } from "../utils/generateToken.js";
 import { validateAndCalculateCoupon } from "./coupon.controller.js";
-import type {
-    CreateOrderInput,
-    UpdateOrderStatusInput,
-    CancelOrderInput,
-    OrderQueryInput,
-} from "../validators/order.validator.js";
 import { createPaymentIntent, stripe } from "../services/payment.service.js";
 
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
-    const body: CreateOrderInput = req.body;
+    const body = req.body;
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const productIds = body.items.map((i) => i.product);
+        const productIds = body.items.map((i: any) => i.product);
         const products = await Product.find({ _id: { $in: productIds }, isActive: true }).session(session);
 
         if (products.length !== productIds.length)
@@ -131,8 +125,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 
         await session.commitTransaction();
 
-        res.status(201).json(new ApiResponse(201, {
-            order,
+        return res.status(201).json(new ApiResponse(201, {
             ...(clientSecret && { clientSecret }),
         }, "Order placed successfully"));
 
@@ -146,7 +139,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 
 export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
-    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" }: OrderQueryInput = req.query as any;
+    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query as any;
 
     const filter: any = { buyer: buyerId };
     if (status) filter.status = status;
@@ -160,7 +153,7 @@ export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
         Order.countDocuments(filter),
     ]);
 
-    res.json(new ApiResponse(200, { orders, total, page, totalPages: Math.ceil(total / limit) }, "Orders fetched"));
+    return res.json(new ApiResponse(200, { orders, total, page, totalPages: Math.ceil(total / limit) }, "Orders fetched"));
 });
 
 export const getOrderById = asyncHandler(async (req: Request, res: Response) => {
@@ -175,7 +168,7 @@ export const getOrderById = asyncHandler(async (req: Request, res: Response) => 
 
     if (!isOwner && !isVendor && !isAdmin) throw new ApiError(403, "Forbidden");
 
-    res.json(new ApiResponse(200, order, "Order fetched"));
+    return res.json(new ApiResponse(200, order, "Order fetched"));
 });
 
 export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
@@ -208,7 +201,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
         await order.save({ session });
 
         await session.commitTransaction();
-        res.json(new ApiResponse(200, order, `Order ${status}`));
+        return res.json(new ApiResponse(200, order, `Order ${status}`));
     } catch (err) {
         await session.abortTransaction();
         throw err;
@@ -241,12 +234,12 @@ export const vendorUpdateOrderStatus = asyncHandler(async (req: Request, res: Re
 
     order.statusHistory.push({ status: order.status, changedAt: new Date(), note });
     await order.save();
-    res.json(new ApiResponse(200, order, "Order status updated"));
+    return res.json(new ApiResponse(200, order, "Order status updated"));
 });
 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
-    const body: CancelOrderInput = req.body;
+    const body = req.body;
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -273,7 +266,7 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
         await order.save({ session });
 
         await session.commitTransaction();
-        res.json(new ApiResponse(200, order, "Order cancelled"));
+        return res.json(new ApiResponse(200, order, "Order cancelled"));
     } catch (err) {
         await session.abortTransaction();
         throw err;
@@ -284,7 +277,7 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
 
 export const getVendorOrders = asyncHandler(async (req: Request, res: Response) => {
     const { id: vendorId } = (req as Request & { user: JwtPayload }).user;
-    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" }: OrderQueryInput = req.query as any;
+    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query as any;
 
     const filter: any = { "items.vendor": new mongoose.Types.ObjectId(vendorId) };
     if (status) filter.status = status;
@@ -320,7 +313,7 @@ export const getVendorOrders = asyncHandler(async (req: Request, res: Response) 
         Order.countDocuments(filter),
     ]);
 
-    res.json(
+    return res.json(
         new ApiResponse(
             200,
             { orders, total, page, totalPages: Math.ceil(total / Number(limit)) },
@@ -330,7 +323,7 @@ export const getVendorOrders = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
-    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" }: OrderQueryInput = req.query as any;
+    const { status, page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query as any;
 
     const filter: any = {};
     if (status) filter.status = status;
@@ -344,5 +337,5 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
         Order.countDocuments(filter),
     ]);
 
-    res.json(new ApiResponse(200, { orders, total, page, totalPages: Math.ceil(total / limit) }, "All orders fetched"));
+    return res.json(new ApiResponse(200, { orders, total, page, totalPages: Math.ceil(total / limit) }, "All orders fetched"));
 });

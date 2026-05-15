@@ -2,14 +2,14 @@ ARG NODE_VERSION=22.13.1
 FROM node:${NODE_VERSION}-alpine AS base
 WORKDIR /app
 
-#  DEVELOPMENT
+# DEVELOPMENT
 FROM base AS development
 COPY package*.json ./
 RUN npm install
 COPY . .
-EXPOSE 3000 
+RUN npm run swagger:build
+EXPOSE 3000
 CMD ["npm", "run", "dev"]
-
 # Builder
 FROM base AS builder
 COPY package*.json ./
@@ -32,4 +32,4 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server.js"]

@@ -13,6 +13,7 @@ export interface ICoupon extends Document {
     isActive: boolean;
     applicableVendors: mongoose.Types.ObjectId[];
     applicableCategories: mongoose.Types.ObjectId[];
+    updatedBy: mongoose.Types.ObjectId;
 }
 
 const couponSchema = new Schema<ICoupon>(
@@ -28,6 +29,7 @@ const couponSchema = new Schema<ICoupon>(
         isActive: { type: Boolean, default: true },
         applicableVendors: [{ type: Schema.Types.ObjectId, ref: "User" }],
         applicableCategories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
+        updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     },
     { timestamps: true }
 );

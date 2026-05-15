@@ -11,7 +11,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     const userId = (req as Request & { user: JwtPayload }).user?.id ?? null;
 
     const result = await processAIChat(userId, message, chatId);
-    res.json(new ApiResponse(200, result, "Message sent"));
+    return res.json(new ApiResponse(200, result, "Message sent"));
 });
 
 export const getChatHistory = asyncHandler(async (req: Request, res: Response) => {
@@ -19,7 +19,7 @@ export const getChatHistory = asyncHandler(async (req: Request, res: Response) =
     const chat = await Chat.findOne({ _id: req.params.chatId, user: userId })
         .populate("messages.products", "name price slug images");
     if (!chat) throw new ApiError(404, "Chat not found");
-    res.json(new ApiResponse(200, chat, "Chat fetched"));
+    return res.json(new ApiResponse(200, chat, "Chat fetched"));
 });
 
 export const getUserChats = asyncHandler(async (req: Request, res: Response) => {
@@ -27,12 +27,12 @@ export const getUserChats = asyncHandler(async (req: Request, res: Response) => 
     const chats = await Chat.find({ user: userId })
         .select("createdAt updatedAt messages")
         .sort({ updatedAt: -1 });
-    res.json(new ApiResponse(200, chats, "Chats fetched"));
+    return res.json(new ApiResponse(200, chats, "Chats fetched"));
 });
 
 export const deleteChat = asyncHandler(async (req: Request, res: Response) => {
     const userId = (req as Request & { user: JwtPayload }).user.id;
     await Chat.findOneAndDelete({ _id: req.params.chatId, user: userId });
-    res.json(new ApiResponse(200, null, "Chat deleted"));
+    return res.json(new ApiResponse(200, null, "Chat deleted"));
 
 });

@@ -3,7 +3,7 @@ import Product from "../models/Product.model.js";
 import type { SearchProductInput } from "../validators/product.validator.js";
 import type { PipelineStage } from 'mongoose';
 
-export const searchProducts = async (params: SearchProductInput) => {
+export const searchProducts = async (params: SearchProductInput["query"]) => {
     const { q, category, vendor, minPrice, maxPrice, rating, page = 1, limit = 20, sort } = params;
     const skip = (page - 1) * limit;
 

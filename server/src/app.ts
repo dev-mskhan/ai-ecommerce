@@ -15,10 +15,20 @@ import fs from 'fs';
 import { stripeWebhook } from "./controllers/payment.controller.js";
 import { fileURLToPath } from "url";
 import path from "path";
-
+import compression from "compression";
+import { initSocketServer } from "./sockets/index.socket.js";
+import http from "http";
+import { Server } from "socket.io";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+export const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+    cors: { origin: env.clientUrl, credentials: true }
+});
+initSocketServer(io);
+app.set("io", io);
+
 app.post(
     "/api/v1/payments/webhook",
     express.raw({ type: "application/json" }),
@@ -35,6 +45,16 @@ app.use(cors(
         credentials: true,
     }
 ));
+app.use(compression({
+    level: 5,
+    threshold: 1024,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        return compression.filter(req, res);
+    }
+}));
 app.use(cookieParser(env.jwtSecret));
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));

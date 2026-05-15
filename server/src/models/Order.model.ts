@@ -119,7 +119,13 @@ const orderSchema = new Schema<IOrder>(
     },
     { timestamps: true }
 );
-
+orderSchema.set("toJSON", {
+    transform: (_doc, ret) => {
+        const { _id, __v, paymentIntentId, ...rest } = ret;
+        rest.items = rest.items?.map(({ _id: _, ...item }: any) => item);
+        return rest;
+    },
+});
 orderSchema.index({ buyer: 1, createdAt: -1 });
 orderSchema.index({ "items.vendor": 1, status: 1 });
 orderSchema.index({ status: 1 });

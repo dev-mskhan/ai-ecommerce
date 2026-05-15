@@ -16,13 +16,13 @@ import roleCheck from "../middleware/roleCheck.middleware.js";
 
 const router = Router();
 
-router.post("/create", authHandler, validateRequest(createOrderSchema), createOrder);
-router.get("/get", authHandler, validateRequest(orderQuerySchema), getMyOrders);
+router.post("/create", authHandler, validateRequest(createOrderSchema, "body"), createOrder);
+router.get("/get", authHandler, validateRequest(orderQuerySchema, "query"), getMyOrders);
 router.get("/get/:id", authHandler, getOrderById);
-router.post("/vendor/update/:id", authHandler, validateRequest(updateOrderStatusSchema), vendorUpdateOrderStatus);
-router.post("/cancel/:id", authHandler, validateRequest(cancelOrderSchema), cancelOrder);
+router.patch("/vendor/:id/status", authHandler, roleCheck('vendor'), validateRequest(updateOrderStatusSchema, "body", "params"), vendorUpdateOrderStatus);
+router.patch("/customer/:id/cancel", authHandler, roleCheck('buyer'), validateRequest(cancelOrderSchema, "body", "params"), cancelOrder);
 
-router.get("/vendor", authHandler, roleCheck('vendor', 'admin'), validateRequest(orderQuerySchema), getVendorOrders);
+router.get("/vendor", authHandler, roleCheck('vendor', 'admin'), validateRequest(orderQuerySchema, "query"), getVendorOrders);
 router.get("/admin", authHandler, roleCheck('admin'), validateRequest(orderQuerySchema), getAllOrders);
-router.post('/admin/update/:id', authHandler, validateRequest(updateOrderStatusSchema), adminUpdateOrderStatus);
+router.patch('/admin/:id/status', authHandler, validateRequest(updateOrderStatusSchema, "body"), adminUpdateOrderStatus);
 export default router;

@@ -1,6 +1,6 @@
 import type { Response, NextFunction, Request } from "express";
 
-type TAsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
+type TAsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void | Response>;
 
 const asyncHandler = (func: TAsyncHandler) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -9,7 +9,7 @@ const asyncHandler = (func: TAsyncHandler) => {
         } catch (error) {
             next(error);
         }
-    }
-}
+    };
+};
 
 export default asyncHandler;

@@ -18,7 +18,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
             env.stripeWebhookSecret
         );
     } catch (err: any) {
-        throw new ApiError(400, `Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     switch (event.type) {
@@ -57,5 +57,5 @@ export const stripeWebhook = async (req: Request, res: Response) => {
             break;
     }
 
-    res.json(new ApiResponse(200, { received: true }, "Webhook processed successfully"));
+    return res.status(200).json({ "received": true });
 };

@@ -20,38 +20,52 @@ const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-    items: z.array(orderItemSchema).min(1, "Order must have at least one item"),
-    shippingAddress: shippingAddressSchema,
-    paymentMethod: z.enum(["stripe", "mock", "cod"]),
-    couponCode: z.string().trim().optional(),
+    body: z.object({
+        items: z.array(orderItemSchema).min(1, "Order must have at least one item"),
+        shippingAddress: shippingAddressSchema,
+        paymentMethod: z.enum(["stripe", "mock", "cod"]),
+        couponCode: z.string().trim().optional(),
+    })
 });
 
 export const updateOrderStatusSchema = z.object({
-    status: z.enum(["confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"]),
-    note: z.string().max(500).optional(),
+    params: z.object({ id: objectId }),
+    body: z.object({
+        status: z.enum(["confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"]),
+        note: z.string().max(500).optional(),
+    })
 });
 
 export const cancelOrderSchema = z.object({
-    reason: z.string().min(5).max(500).trim(),
+    params: z.object({ id: objectId }),
+    body: z.object({
+        reason: z.string().min(5).max(500).trim(),
+    })
 });
 
 export const orderQuerySchema = z.object({
-    status: z
-        .enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"])
-        .optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(50).default(10),
-    sortBy: z.enum(["createdAt", "total"]).default("createdAt"),
-    order: z.enum(["asc", "desc"]).default("desc"),
+    query: z.object({
+        status: z
+            .enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"])
+            .optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(50).default(10),
+        sortBy: z.enum(["createdAt", "total"]).default("createdAt"),
+        order: z.enum(["asc", "desc"]).default("desc"),
+    })
 });
 export const paymentIntentSchema = z.object({
-    orderId: objectId,
-    currency: z.string().length(3).default("usd").optional(),
+    body: z.object({
+        orderId: objectId,
+        currency: z.string().length(3).default("usd").optional(),
+    })
 });
 
 export const confirmPaymentSchema = z.object({
-    orderId: objectId,
-    paymentIntentId: z.string().startsWith("pi_"),
+    body: z.object({
+        orderId: objectId,
+        paymentIntentId: z.string().startsWith("pi_"),
+    })
 });
 
 export type PaymentIntentInput = z.infer<typeof paymentIntentSchema>;

@@ -50,6 +50,10 @@
     {
       "name": "Orders - Admin",
       "description": "Admin order management"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin management for vendors, orders, users, and reported products"
     }
   ],
   "components": {
@@ -645,7 +649,7 @@
         }
       }
     },
-    "/products/vendor/my-products": {
+    "/products/vendor": {
       "get": {
         "tags": [
           "Products - Vendor"
@@ -1206,7 +1210,7 @@
         }
       }
     },
-    "/chat/send": {
+    "/chats/send": {
       "post": {
         "tags": [
           "Chat"
@@ -1266,7 +1270,7 @@
         }
       }
     },
-    "/chat": {
+    "/chats": {
       "get": {
         "tags": [
           "Chat"
@@ -1303,7 +1307,7 @@
         }
       }
     },
-    "/chat/{chatId}": {
+    "/chats/{chatId}": {
       "get": {
         "tags": [
           "Chat"
@@ -1684,7 +1688,110 @@
         }
       }
     },
-    "/orders/create": {
+    "/coupons/update/{id}": {
+      "post": {
+        "tags": [
+          "Coupons"
+        ],
+        "summary": "Update a coupon (admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "example": "SAVE20"
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "percentage",
+                      "fixed"
+                    ],
+                    "example": "percentage"
+                  },
+                  "discountValue": {
+                    "type": "number",
+                    "example": 20
+                  },
+                  "minOrderAmount": {
+                    "type": "number",
+                    "example": 100
+                  },
+                  "maxDiscountAmount": {
+                    "type": "number",
+                    "example": 50
+                  },
+                  "usageLimit": {
+                    "type": "number",
+                    "example": 100
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-12-31T23:59:59.000Z"
+                  },
+                  "applicableVendors": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "applicableCategories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coupon updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123",
+                    "code": "SAVE20",
+                    "discountType": "percentage",
+                    "discountValue": 20,
+                    "isActive": true
+                  },
+                  "message": "Coupon updated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Coupon not found"
+          }
+        }
+      }
+    },
+    "/orders": {
       "post": {
         "tags": [
           "Orders"
@@ -1718,10 +1825,11 @@
                       "properties": {
                         "product": {
                           "type": "string",
-                          "example": "64abc123def456789abc1234"
+                          "example": "664f1b2c9a8e4d001f3c7a11"
                         },
                         "quantity": {
                           "type": "integer",
+                          "minimum": 1,
                           "example": 2
                         },
                         "selectedVariants": {
@@ -1730,8 +1838,8 @@
                             "type": "string"
                           },
                           "example": {
-                            "size": "M",
-                            "color": "red"
+                            "size": "42",
+                            "color": "Black"
                           }
                         }
                       }
@@ -1739,29 +1847,61 @@
                   },
                   "shippingAddress": {
                     "type": "object",
+                    "required": [
+                      "fullName",
+                      "phone",
+                      "addressLine1",
+                      "city",
+                      "state",
+                      "postalCode",
+                      "country"
+                    ],
                     "properties": {
-                      "street": {
-                        "type": "string"
+                      "fullName": {
+                        "type": "string",
+                        "example": "Ahmed Raza"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "example": "03001234567"
+                      },
+                      "addressLine1": {
+                        "type": "string",
+                        "example": "House 12, Block B"
+                      },
+                      "addressLine2": {
+                        "type": "string",
+                        "example": "Near City Hospital"
                       },
                       "city": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Karachi"
+                      },
+                      "state": {
+                        "type": "string",
+                        "example": "Sindh"
+                      },
+                      "postalCode": {
+                        "type": "string",
+                        "example": "75500"
                       },
                       "country": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "Pakistan"
                       }
                     }
-                  },
-                  "paymentMethod": {
-                    "type": "string",
-                    "enum": [
-                      "cod",
-                      "card"
-                    ],
-                    "example": "cod"
                   },
                   "couponCode": {
                     "type": "string",
                     "example": "SAVE20"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "stripe",
+                      "cod"
+                    ],
+                    "example": "stripe"
                   }
                 }
               }
@@ -1770,44 +1910,35 @@
         },
         "responses": {
           "201": {
-            "description": "Order placed",
+            "description": "Order placed successfully",
             "content": {
               "application/json": {
-                "example": {
-                  "statusCode": 201,
-                  "data": {
-                    "_id": "64order123",
-                    "status": "pending",
-                    "subtotal": 150,
-                    "discount": 30,
-                    "total": 120
-                  },
-                  "message": "Order placed successfully"
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clientSecret": {
+                      "type": "string",
+                      "description": "Stripe client secret (only for stripe payments)",
+                      "example": "pi_3OqX2t_secret_xyz"
+                    }
+                  }
                 }
               }
             }
           },
           "400": {
-            "description": "Unavailable product, insufficient stock, or invalid coupon",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 400,
-                  "data": null,
-                  "message": "Insufficient stock for \"Nike Air Max\""
-                }
-              }
-            }
+            "description": "Invalid product, insufficient stock, or coupon error"
+          },
+          "422": {
+            "description": "Validation error"
           }
         }
-      }
-    },
-    "/orders/get": {
+      },
       "get": {
         "tags": [
           "Orders"
         ],
-        "summary": "Get logged-in buyer's orders",
+        "summary": "Get my orders",
         "security": [
           {
             "cookieAuth": []
@@ -1815,77 +1946,66 @@
         ],
         "parameters": [
           {
-            "name": "status",
             "in": "query",
+            "name": "status",
             "schema": {
               "type": "string",
               "enum": [
                 "pending",
                 "confirmed",
+                "processing",
                 "shipped",
                 "delivered",
-                "cancelled"
+                "cancelled",
+                "refunded"
               ]
             }
           },
           {
+            "in": "query",
             "name": "page",
-            "in": "query",
             "schema": {
               "type": "integer",
-              "example": 1
+              "default": 1
             }
           },
           {
+            "in": "query",
             "name": "limit",
-            "in": "query",
             "schema": {
               "type": "integer",
-              "example": 10
+              "default": 10
             }
           },
           {
-            "name": "sortBy",
             "in": "query",
+            "name": "sortBy",
             "schema": {
               "type": "string",
-              "example": "createdAt"
+              "default": "createdAt"
             }
           },
           {
-            "name": "order",
             "in": "query",
+            "name": "order",
             "schema": {
               "type": "string",
               "enum": [
                 "asc",
                 "desc"
-              ]
+              ],
+              "default": "desc"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Orders fetched",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "orders": [],
-                    "total": 5,
-                    "page": 1,
-                    "totalPages": 1
-                  },
-                  "message": "Orders fetched"
-                }
-              }
-            }
+            "description": "Orders fetched"
           }
         }
       }
     },
-    "/orders/get/{id}": {
+    "/orders/{id}": {
       "get": {
         "tags": [
           "Orders"
@@ -1898,8 +2018,8 @@
         ],
         "parameters": [
           {
-            "name": "id",
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
               "type": "string"
@@ -1908,20 +2028,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Order fetched",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "_id": "64order123",
-                    "status": "pending",
-                    "items": []
-                  },
-                  "message": "Order fetched"
-                }
-              }
-            }
+            "description": "Order fetched"
           },
           "403": {
             "description": "Forbidden"
@@ -1932,12 +2039,12 @@
         }
       }
     },
-    "/orders/update/{id}": {
-      "post": {
+    "/orders/{id}/cancel": {
+      "patch": {
         "tags": [
           "Orders"
         ],
-        "summary": "Update order status (vendor or admin)",
+        "summary": "Cancel an order (buyer)",
         "security": [
           {
             "cookieAuth": []
@@ -1945,8 +2052,204 @@
         ],
         "parameters": [
           {
-            "name": "id",
             "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Changed my mind"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled"
+          },
+          "400": {
+            "description": "Cannot cancel order in current status"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/vendor": {
+      "get": {
+        "tags": [
+          "Orders - Vendor"
+        ],
+        "summary": "Get vendor's orders (only their items)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor orders fetched"
+          }
+        }
+      }
+    },
+    "/orders/admin": {
+      "get": {
+        "tags": [
+          "Orders - Admin"
+        ],
+        "summary": "Get all orders (admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All orders fetched"
+          }
+        }
+      }
+    },
+    "/orders/admin/{orderId}/status": {
+      "patch": {
+        "tags": [
+          "Orders - Admin"
+        ],
+        "summary": "Update order status (admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
             "required": true,
             "schema": {
               "type": "string"
@@ -1966,17 +2269,15 @@
                   "status": {
                     "type": "string",
                     "enum": [
-                      "pending",
-                      "confirmed",
-                      "shipped",
+                      "cancelled",
                       "delivered",
-                      "cancelled"
+                      "refunded"
                     ],
-                    "example": "shipped"
+                    "example": "delivered"
                   },
-                  "note": {
+                  "reason": {
                     "type": "string",
-                    "example": "Dispatched via DHL"
+                    "example": "Delivered to customer"
                   }
                 }
               }
@@ -1985,19 +2286,69 @@
         },
         "responses": {
           "200": {
-            "description": "Status updated",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "_id": "64order123",
-                    "status": "shipped"
+            "description": "Order status updated"
+          },
+          "400": {
+            "description": "Order already in this status"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/{id}/vendor-status": {
+      "patch": {
+        "tags": [
+          "Orders - Vendor"
+        ],
+        "summary": "Update item status for vendor's items",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "confirmed",
+                      "processing",
+                      "shipped"
+                    ],
+                    "example": "processing"
                   },
-                  "message": "Order status updated"
+                  "note": {
+                    "type": "string",
+                    "example": "Packed and ready"
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order status updated"
           },
           "403": {
             "description": "Forbidden"
@@ -2008,12 +2359,12 @@
         }
       }
     },
-    "/orders/cancel/{id}": {
-      "post": {
+    "/admin/vendors": {
+      "get": {
         "tags": [
-          "Orders"
+          "Admin"
         ],
-        "summary": "Cancel an order (buyer)",
+        "summary": "Get all vendors (paginated)",
         "security": [
           {
             "cookieAuth": []
@@ -2021,11 +2372,80 @@
         ],
         "parameters": [
           {
-            "name": "id",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendors fetched successfully"
+          }
+        }
+      }
+    },
+    "/admin/vendor/approve/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Approve a vendor",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "664f1b2c9a8e4d001f3c7a11"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor approved successfully"
+          },
+          "404": {
+            "description": "Vendor not found"
+          }
+        }
+      }
+    },
+    "/admin/vendor/reject/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reject a vendor with reason",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "664f1b2c9a8e4d001f3c7a11"
             }
           }
         ],
@@ -2041,7 +2461,7 @@
                 "properties": {
                   "reason": {
                     "type": "string",
-                    "example": "Changed my mind"
+                    "example": "Incomplete store information"
                   }
                 }
               }
@@ -2050,111 +2470,209 @@
         },
         "responses": {
           "200": {
-            "description": "Order cancelled",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "_id": "64order123",
-                    "status": "cancelled"
-                  },
-                  "message": "Order cancelled"
+            "description": "Vendor rejected successfully"
+          },
+          "404": {
+            "description": "Vendor not found"
+          }
+        }
+      }
+    },
+    "/admin/vendor/ban/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Ban or unban a vendor",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "664f1b2c9a8e4d001f3c7a11"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "isBanned"
+                ],
+                "properties": {
+                  "isBanned": {
+                    "type": "boolean",
+                    "example": true
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vendor banned/unbanned successfully"
+          },
+          "404": {
+            "description": "Vendor not found"
+          }
+        }
+      }
+    },
+    "/admin/reported-products": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all reported products",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reported products fetched successfully"
+          }
+        }
+      }
+    },
+    "/admin/reported-products/handle/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Remove or dismiss a reported product",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "664f1b2c9a8e4d001f3c7a11"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "remove",
+                      "dismiss"
+                    ],
+                    "example": "dismiss"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product removed or report dismissed"
           },
           "400": {
-            "description": "Cannot cancel in current status",
-            "content": {
-              "application/json": {
-                "example": {
-                  "statusCode": 400,
-                  "data": null,
-                  "message": "Cannot cancel an order in \"shipped\" status"
-                }
-              }
-            }
+            "description": "Invalid action"
           },
-          "403": {
-            "description": "Forbidden"
+          "404": {
+            "description": "Product not found"
           }
         }
       }
     },
-    "/orders/vendor": {
+    "/admin/dashboard": {
       "get": {
         "tags": [
-          "Orders - Vendor"
+          "Admin"
         ],
-        "summary": "Get orders containing vendor's products",
+        "summary": "Get revenue and order analytics",
         "security": [
           {
             "cookieAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "confirmed",
-                "shipped",
-                "delivered",
-                "cancelled"
-              ]
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "sortBy",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "Vendor orders fetched",
+            "description": "Dashboard stats fetched successfully",
             "content": {
               "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "orders": [],
-                    "total": 3,
-                    "page": 1,
-                    "totalPages": 1
-                  },
-                  "message": "Vendor orders fetched"
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalRevenue": {
+                      "type": "number",
+                      "example": 24500.75
+                    },
+                    "revenueAnalytics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "object",
+                            "properties": {
+                              "month": {
+                                "type": "integer"
+                              },
+                              "year": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "totalRevenue": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "orderAnalytics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "object",
+                            "properties": {
+                              "month": {
+                                "type": "integer"
+                              },
+                              "year": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "totalOrders": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2162,79 +2680,79 @@
         }
       }
     },
-    "/orders/admin": {
+    "/admin/user-stats": {
       "get": {
         "tags": [
-          "Orders - Admin"
+          "Admin"
         ],
-        "summary": "Get all orders (admin)",
+        "summary": "Get user growth and top vendors",
         "security": [
           {
             "cookieAuth": []
           }
         ],
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "confirmed",
-                "shipped",
-                "delivered",
-                "cancelled"
-              ]
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "sortBy",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "order",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
-            }
-          }
-        ],
         "responses": {
           "200": {
-            "description": "All orders fetched",
+            "description": "User stats fetched successfully",
             "content": {
               "application/json": {
-                "example": {
-                  "statusCode": 200,
-                  "data": {
-                    "orders": [],
-                    "total": 50,
-                    "page": 1,
-                    "totalPages": 5
-                  },
-                  "message": "All orders fetched"
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalUsers": {
+                      "type": "integer",
+                      "example": 1500
+                    },
+                    "totalVendors": {
+                      "type": "integer",
+                      "example": 120
+                    },
+                    "userGrowth": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "object",
+                            "properties": {
+                              "month": {
+                                "type": "integer"
+                              },
+                              "year": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "newUsers": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "topVendors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "storeName": {
+                            "type": "string"
+                          },
+                          "storeAvatar": {
+                            "type": "string"
+                          },
+                          "totalSales": {
+                            "type": "number"
+                          },
+                          "orderCount": {
+                            "type": "integer"
+                          },
+                          "companyRevenue": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }

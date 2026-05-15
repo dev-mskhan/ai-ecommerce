@@ -51,6 +51,8 @@ tags:
     description: Vendor order management
   - name: Orders - Admin
     description: Admin order management
+  - name: Admin
+    description: Admin management for vendors, orders, users, and reported products
 components:
   securitySchemes:
     cookieAuth:
@@ -81,13 +83,14 @@ paths:
     $ref: ./paths/product.yaml#/get-product-by-slug
 
   # Products - Vendor
-  /products/vendor/my-products:
+  /products/vendor:
     $ref: ./paths/product.yaml#/vendor-products
-  /products/{id}:
+  /products/vendor/{id}:
     $ref: ./paths/product.yaml#/update-product
-  /products/{id}/toggle:
+  /products/vendor/{id}/toggle:
     $ref: ./paths/product.yaml#/toggle-product-status
-
+  /products/vendor/{id}/stock:
+    $ref: ./paths/product.yaml#/update-stock
   # Products - Admin
   /products/admin/{id}:
     $ref: ./paths/product.yaml#/admin-delete-product
@@ -109,11 +112,11 @@ paths:
   /categories/{id}/toggle:
     $ref: ./paths/category.yaml#/toggle-category-status
   # Chat
-  /chat/send:
+  /chats/send:
     $ref: ./paths/chat.yaml#/send-message
-  /chat:
+  /chats:
     $ref: ./paths/chat.yaml#/get-user-chats
-  /chat/{chatId}:
+  /chats/{chatId}:
     get:
       $ref: ./paths/chat.yaml#/get-chat-history/get
     delete:
@@ -129,18 +132,39 @@ paths:
     $ref: ./paths/coupon.yaml#/toggle-coupon
   /coupons/delete/{id}:
     $ref: ./paths/coupon.yaml#/delete-coupon
+  /coupons/update/{id}:
+    $ref: ./paths/coupon.yaml#/update-coupon
+  
   # Orders
-  /orders/create:
-    $ref: ./paths/order.yaml#/create-order
-  /orders/get:
-    $ref: ./paths/order.yaml#/get-my-orders
-  /orders/get/{id}:
-    $ref: ./paths/order.yaml#/get-order-by-id
-  /orders/update/{id}:
-    $ref: ./paths/order.yaml#/update-order-status
-  /orders/cancel/{id}:
+  /orders:
+    $ref: ./paths/order.yaml#/orders
+  /orders/{id}:
+    $ref: ./paths/order.yaml#/order-by-id
+  /orders/customer/{id}/cancel:
     $ref: ./paths/order.yaml#/cancel-order
   /orders/vendor:
-    $ref: ./paths/order.yaml#/get-vendor-orders
+    $ref: ./paths/order.yaml#/vendor-orders
   /orders/admin:
-    $ref: ./paths/order.yaml#/get-all-orders
+    $ref: ./paths/order.yaml#/admin-orders
+  /orders/admin/{id}/status:
+    $ref: ./paths/order.yaml#/admin-update-status
+  /orders/vendor/{id}/status:
+    $ref: ./paths/order.yaml#/vendor-update-status
+
+  # Admin
+  /admin/vendors:
+    $ref: ./paths/admin.yaml#/get-all-vendors
+  /admin/vendor/approve/{id}:
+    $ref: ./paths/admin.yaml#/approve-vendor
+  /admin/vendor/reject/{id}:
+    $ref: ./paths/admin.yaml#/reject-vendor
+  /admin/vendor/ban/{id}:
+    $ref: ./paths/admin.yaml#/ban-vendor
+  /admin/reported-products:
+    $ref: ./paths/admin.yaml#/reported-products
+  /admin/reported-products/handle/{id}:
+    $ref: ./paths/admin.yaml#/handle-reported-product
+  /admin/dashboard:
+    $ref: ./paths/admin.yaml#/dashboard-stats
+  /admin/user-stats:
+    $ref: ./paths/admin.yaml#/user-stats

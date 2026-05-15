@@ -1,4 +1,4 @@
-create-order:
+orders:
   post:
     tags: [Orders]
     summary: Place a new order
@@ -20,138 +20,201 @@ create-order:
                   properties:
                     product:
                       type: string
-                      example: "64abc123def456789abc1234"
+                      example: 664f1b2c9a8e4d001f3c7a11
                     quantity:
                       type: integer
+                      minimum: 1
                       example: 2
                     selectedVariants:
                       type: object
                       additionalProperties:
                         type: string
-                      example: { size: "M", color: "red" }
+                      example: { size: "42", color: "Black" }
               shippingAddress:
                 type: object
+                required: [fullName, phone, addressLine1, city, state, postalCode, country]
                 properties:
-                  street:
+                  fullName:
                     type: string
+                    example: Ahmed Raza
+                  phone:
+                    type: string
+                    example: "03001234567"
+                  addressLine1:
+                    type: string
+                    example: House 12, Block B
+                  addressLine2:
+                    type: string
+                    example: Near City Hospital
                   city:
                     type: string
+                    example: Karachi
+                  state:
+                    type: string
+                    example: Sindh
+                  postalCode:
+                    type: string
+                    example: "75500"
                   country:
                     type: string
-              paymentMethod:
-                type: string
-                enum: [cod, card]
-                example: "cod"
+                    example: Pakistan
               couponCode:
                 type: string
-                example: "SAVE20"
+                example: SAVE20
+              paymentMethod:
+                type: string
+                enum: [stripe, cod]
+                example: stripe
     responses:
-      '201':
-        description: Order placed
+      201:
+        description: Order placed successfully
         content:
           application/json:
-            example:
-              statusCode: 201
-              data:
-                _id: "64order123"
-                status: "pending"
-                subtotal: 150
-                discount: 30
-                total: 120
-              message: "Order placed successfully"
-      '400':
-        description: Unavailable product, insufficient stock, or invalid coupon
-        content:
-          application/json:
-            example:
-              statusCode: 400
-              data: null
-              message: "Insufficient stock for \"Nike Air Max\""
+            schema:
+              type: object
+              properties:
+                clientSecret:
+                  type: string
+                  description: Stripe client secret (only for stripe payments)
+                  example: pi_3OqX2t_secret_xyz
+      400:
+        description: Invalid product, insufficient stock, or coupon error
+      422:
+        description: Validation error
 
-get-my-orders:
   get:
     tags: [Orders]
-    summary: Get logged-in buyer's orders
+    summary: Get my orders
     security:
       - cookieAuth: []
     parameters:
-      - name: status
-        in: query
+      - in: query
+        name: status
         schema:
           type: string
-          enum: [pending, confirmed, shipped, delivered, cancelled]
-      - name: page
-        in: query
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
         schema:
           type: integer
-          example: 1
-      - name: limit
-        in: query
+          default: 1
+      - in: query
+        name: limit
         schema:
           type: integer
-          example: 10
-      - name: sortBy
-        in: query
+          default: 10
+      - in: query
+        name: sortBy
         schema:
           type: string
-          example: "createdAt"
-      - name: order
-        in: query
+          default: createdAt
+      - in: query
+        name: order
         schema:
           type: string
           enum: [asc, desc]
+          default: desc
     responses:
-      '200':
+      200:
         description: Orders fetched
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                orders: []
-                total: 5
-                page: 1
-                totalPages: 1
-              message: "Orders fetched"
 
-get-order-by-id:
+order-by-id:
   get:
     tags: [Orders]
     summary: Get order by ID (buyer, vendor, or admin)
     security:
       - cookieAuth: []
     parameters:
-      - name: id
-        in: path
+      - in: path
+        name: id
         required: true
         schema:
           type: string
     responses:
-      '200':
+      200:
         description: Order fetched
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                _id: "64order123"
-                status: "pending"
-                items: []
-              message: "Order fetched"
-      '403':
+      403:
         description: Forbidden
-      '404':
+      404:
         description: Order not found
 
-update-order-status:
-  post:
+cancel-order:
+  patch:
     tags: [Orders]
-    summary: Update order status (vendor or admin)
+    summary: Cancel an order (buyer)
     security:
       - cookieAuth: []
     parameters:
-      - name: id
-        in: path
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+                example: Changed my mind
+    responses:
+      200:
+        description: Order cancelled
+      400:
+        description: Cannot cancel order in current status
+      403:
+        description: Forbidden
+      404:
+        description: Order not found
+
+vendor-orders:
+  get:
+    tags: [Orders - Vendor]
+    summary: Get vendor's orders (only their items)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          default: createdAt
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      200:
+        description: Vendor orders fetched
+
+vendor-update-status:
+  patch:
+    tags: [Orders - Vendor]
+    summary: Update item status for vendor's items
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
         required: true
         schema:
           type: string
@@ -165,36 +228,65 @@ update-order-status:
             properties:
               status:
                 type: string
-                enum: [pending, confirmed, shipped, delivered, cancelled]
-                example: "shipped"
+                enum: [confirmed, processing, shipped]
+                example: processing
               note:
                 type: string
-                example: "Dispatched via DHL"
+                example: Packed and ready
     responses:
-      '200':
-        description: Status updated
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                _id: "64order123"
-                status: "shipped"
-              message: "Order status updated"
-      '403':
+      200:
+        description: Order status updated
+      403:
         description: Forbidden
-      '404':
+      404:
         description: Order not found
 
-cancel-order:
-  post:
-    tags: [Orders]
-    summary: Cancel an order (buyer)
+admin-orders:
+  get:
+    tags: [Orders - Admin]
+    summary: Get all orders (admin)
     security:
       - cookieAuth: []
     parameters:
-      - name: id
-        in: path
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          default: createdAt
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      200:
+        description: All orders fetched
+
+admin-update-status:
+  patch:
+    tags: [Orders - Admin]
+    summary: Update order status (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: orderId
         required: true
         schema:
           type: string
@@ -204,115 +296,19 @@ cancel-order:
         application/json:
           schema:
             type: object
-            required: [reason]
+            required: [status]
             properties:
+              status:
+                type: string
+                enum: [cancelled, delivered, refunded]
+                example: delivered
               reason:
                 type: string
-                example: "Changed my mind"
+                example: Delivered to customer
     responses:
-      '200':
-        description: Order cancelled
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                _id: "64order123"
-                status: "cancelled"
-              message: "Order cancelled"
-      '400':
-        description: Cannot cancel in current status
-        content:
-          application/json:
-            example:
-              statusCode: 400
-              data: null
-              message: "Cannot cancel an order in \"shipped\" status"
-      '403':
-        description: Forbidden
-
-get-vendor-orders:
-  get:
-    tags: [Orders - Vendor]
-    summary: Get orders containing vendor's products
-    security:
-      - cookieAuth: []
-    parameters:
-      - name: status
-        in: query
-        schema:
-          type: string
-          enum: [pending, confirmed, shipped, delivered, cancelled]
-      - name: page
-        in: query
-        schema:
-          type: integer
-      - name: limit
-        in: query
-        schema:
-          type: integer
-      - name: sortBy
-        in: query
-        schema:
-          type: string
-      - name: order
-        in: query
-        schema:
-          type: string
-          enum: [asc, desc]
-    responses:
-      '200':
-        description: Vendor orders fetched
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                orders: []
-                total: 3
-                page: 1
-                totalPages: 1
-              message: "Vendor orders fetched"
-
-get-all-orders:
-  get:
-    tags: [Orders - Admin]
-    summary: Get all orders (admin)
-    security:
-      - cookieAuth: []
-    parameters:
-      - name: status
-        in: query
-        schema:
-          type: string
-          enum: [pending, confirmed, shipped, delivered, cancelled]
-      - name: page
-        in: query
-        schema:
-          type: integer
-      - name: limit
-        in: query
-        schema:
-          type: integer
-      - name: sortBy
-        in: query
-        schema:
-          type: string
-      - name: order
-        in: query
-        schema:
-          type: string
-          enum: [asc, desc]
-    responses:
-      '200':
-        description: All orders fetched
-        content:
-          application/json:
-            example:
-              statusCode: 200
-              data:
-                orders: []
-                total: 50
-                page: 1
-                totalPages: 5
-              message: "All orders fetched"
+      200:
+        description: Order status updated
+      400:
+        description: Order already in this status
+      404:
+        description: Order not found

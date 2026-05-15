@@ -3,10 +3,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import Coupon from "../models/Coupon.model.js";
-import type { CreateCouponInput, ApplyCouponInput } from "../validators/coupon.validator.js";
 
 export const validateAndCalculateCoupon = async (
-    { code, orderAmount }: ApplyCouponInput,
+    { code, orderAmount }: { code: string; orderAmount: number },
     vendorIds: string[],
     categoryIds: string[]
 ): Promise<{ coupon: InstanceType<typeof Coupon>; discount: number }> => {
@@ -43,14 +42,14 @@ export const validateAndCalculateCoupon = async (
 };
 
 export const createCoupon = asyncHandler(async (req: Request, res: Response) => {
-    const body: CreateCouponInput = req.body;
+    const body = req.body;
     const coupon = await Coupon.create(body);
     res.status(201).json(new ApiResponse(201, coupon, "Coupon created"));
 });
 
 export const getAllCoupons = asyncHandler(async (_req: Request, res: Response) => {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
-    res.json(new ApiResponse(200, coupons, "Coupons fetched"));
+    return res.json(new ApiResponse(200, coupons, "Coupons fetched"));
 });
 
 export const toggleCoupon = asyncHandler(async (req: Request, res: Response) => {
@@ -59,17 +58,26 @@ export const toggleCoupon = asyncHandler(async (req: Request, res: Response) => 
 
     coupon.isActive = !coupon.isActive;
     await coupon.save();
-    res.json(new ApiResponse(200, coupon, `Coupon ${coupon.isActive ? "activated" : "deactivated"}`));
+    return res.json(new ApiResponse(200, coupon, `Coupon ${coupon.isActive ? "activated" : "deactivated"}`));
 });
 
 export const deleteCoupon = asyncHandler(async (req: Request, res: Response) => {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
     if (!coupon) throw new ApiError(404, "Coupon not found");
-    res.json(new ApiResponse(200, null, "Coupon deleted"));
+    return res.json(new ApiResponse(200, null, "Coupon deleted"));
 });
 
 export const applyCoupon = asyncHandler(async (req: Request, res: Response) => {
-    const body: ApplyCouponInput = req.body;
+    const body = req.body;
     const { discount } = await validateAndCalculateCoupon(body, [], []);
-    res.json(new ApiResponse(200, { discount, finalAmount: body.orderAmount - discount }, "Coupon applied"));
+    return res.json(new ApiResponse(200, { discount, finalAmount: body.orderAmount - discount }, "Coupon applied"));
+});
+
+export const updateCoupon = asyncHandler(async (req: Request, res: Response) => {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) throw new ApiError(404, "Coupon not found");
+    const body = req.body;
+    Object.assign(coupon, body);
+    await coupon.save();
+    return res.json(new ApiResponse(200, coupon, "Coupon updated"));
 });

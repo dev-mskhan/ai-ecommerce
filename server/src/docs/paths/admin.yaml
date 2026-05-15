@@ -1,0 +1,238 @@
+get-all-vendors:
+  get:
+    tags: [Admin]
+    summary: Get all vendors (paginated)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 20
+    responses:
+      200:
+        description: Vendors fetched successfully
+
+approve-vendor:
+  patch:
+    tags: [Admin]
+    summary: Approve a vendor
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    responses:
+      200:
+        description: Vendor approved successfully
+      404:
+        description: Vendor not found
+
+reject-vendor:
+  patch:
+    tags: [Admin]
+    summary: Reject a vendor with reason
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason:
+                type: string
+                example: Incomplete store information
+    responses:
+      200:
+        description: Vendor rejected successfully
+      404:
+        description: Vendor not found
+
+ban-vendor:
+  patch:
+    tags: [Admin]
+    summary: Ban or unban a vendor
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [isBanned]
+            properties:
+              isBanned:
+                type: boolean
+                example: true
+    responses:
+      200:
+        description: Vendor banned/unbanned successfully
+      404:
+        description: Vendor not found
+
+reported-products:
+  get:
+    tags: [Admin]
+    summary: Get all reported products
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: Reported products fetched successfully
+
+handle-reported-product:
+  patch:
+    tags: [Admin]
+    summary: Remove or dismiss a reported product
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [action]
+            properties:
+              action:
+                type: string
+                enum: [remove, dismiss]
+                example: dismiss
+    responses:
+      200:
+        description: Product removed or report dismissed
+      400:
+        description: Invalid action
+      404:
+        description: Product not found
+
+dashboard-stats:
+  get:
+    tags: [Admin]
+    summary: Get revenue and order analytics
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: Dashboard stats fetched successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalRevenue:
+                  type: number
+                  example: 24500.75
+                revenueAnalytics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      totalRevenue:
+                        type: number
+                orderAnalytics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      totalOrders:
+                        type: integer
+
+user-stats:
+  get:
+    tags: [Admin]
+    summary: Get user growth and top vendors
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: User stats fetched successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalUsers:
+                  type: integer
+                  example: 1500
+                totalVendors:
+                  type: integer
+                  example: 120
+                userGrowth:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      newUsers:
+                        type: integer
+                topVendors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      storeName:
+                        type: string
+                      storeAvatar:
+                        type: string
+                      totalSales:
+                        type: number
+                      orderCount:
+                        type: integer
+                      companyRevenue:
+                        type: number

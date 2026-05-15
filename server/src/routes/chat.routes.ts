@@ -6,7 +6,7 @@ import { sendMessageSchema } from "../validators/chat.validator.js";
 
 const router = Router();
 
-router.post("/send", optionalAuth, validateRequest(sendMessageSchema), sendMessage);
+router.post("/send", optionalAuth, validateRequest(sendMessageSchema, "body"), sendMessage);
 router.get("/", authHandler, getUserChats);
 router.get("/:chatId", authHandler, getChatHistory);
 router.delete("/:chatId", authHandler, deleteChat);

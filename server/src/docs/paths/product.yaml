@@ -317,3 +317,38 @@ toggle-featured-product:
               statusCode: 200
               data: {}
               message: "Product featured"
+  update-stock:
+    patch:
+      tags: [Products - Vendor]
+      summary: Update product stock
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              stock: 10
+      responses:
+        '200':
+          description: Stock updated
+          content:
+            application/json:
+              example:
+                statusCode: 200
+                data: {}
+                message: "Stock updated"
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              example:
+                statusCode: 404
+                data: null
+                message: "Product not found"
