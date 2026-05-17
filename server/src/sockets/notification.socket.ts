@@ -19,7 +19,6 @@ export const emitToUser = (
     sockets.forEach((socketId) => io.to(socketId).emit(event, payload));
 };
 
-/** Create a Notification document and push it live to the recipient. */
 export const createAndEmitNotification = async (
     io: Server,
     data: Partial<INotification>
@@ -34,14 +33,10 @@ export const createAndEmitNotification = async (
 export const registerNotificationHandlers = (io: Server, socket: Socket): void => {
     const userId = socket.data.user._id.toString();
 
-    // Track socket → user mapping
     if (!userSocketMap.has(userId)) userSocketMap.set(userId, new Set());
     userSocketMap.get(userId)!.add(socket.id);
 
-    // Join personal notification room (alternative to the map approach)
     socket.join(`notifications:${userId}`);
-
-    // Mark a single notification as read
     socket.on("notification:read", async (notificationId: string) => {
         await Notification.findOneAndUpdate(
             { _id: notificationId, recipient: userId },
@@ -50,19 +45,16 @@ export const registerNotificationHandlers = (io: Server, socket: Socket): void =
         socket.emit("notification:read_ack", { notificationId });
     });
 
-    // Mark ALL notifications as read
     socket.on("notification:read_all", async () => {
         await Notification.updateMany({ recipient: userId, isRead: false }, { isRead: true });
         socket.emit("notification:read_all_ack");
     });
 
-    // Fetch unread count on demand
     socket.on("notification:unread_count", async () => {
         const count = await Notification.countDocuments({ recipient: userId, isRead: false });
         socket.emit("notification:unread_count", { count });
     });
 
-    // Cleanup on disconnect
     socket.on("disconnect", () => {
         const sockets = userSocketMap.get(userId);
         if (sockets) {

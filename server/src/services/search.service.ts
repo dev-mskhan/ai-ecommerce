@@ -4,7 +4,7 @@ import type { SearchProductInput } from "../validators/product.validator.js";
 import type { PipelineStage } from 'mongoose';
 
 export const searchProducts = async (params: SearchProductInput["query"]) => {
-    const { q, category, vendor, minPrice, maxPrice, rating, page = 1, limit = 20, sort } = params;
+    const { q, categoryId, minPrice, maxPrice, rating, page = 1, limit = 20, sort, order = "desc" } = params;
     const skip = (page - 1) * limit;
 
     type SortOrder = 1 | -1;
@@ -14,12 +14,15 @@ export const searchProducts = async (params: SearchProductInput["query"]) => {
         sort === "price_asc" ? { price: 1 } :
             sort === "price_desc" ? { price: -1 } :
                 sort === "rating" ? { "ratings.average": -1 } :
-                    { createdAt: -1 }
+                    sort === "newest" ? { createdAt: -1 } :
+                        sort === "discountPrice_asc" ? { discountPrice: 1 } :
+                            sort === "discountPrice_desc" ? { discountPrice: -1 } :
+                                { createdAt: -1 }
     ) as SortStage;
 
     const isObjectId = (val: string) => /^[a-f\d]{24}$/i.test(val);
 
-    const categoryLookupStages: PipelineStage[] = category && !isObjectId(category)
+    const categoryLookupStages: PipelineStage[] = categoryId && !isObjectId(categoryId)
         ? [
             {
                 $lookup: {
@@ -29,14 +32,12 @@ export const searchProducts = async (params: SearchProductInput["query"]) => {
                     as: 'categoryData',
                 },
             },
-            { $match: { 'categoryData.name': { $regex: category, $options: 'i' } } },
+            { $match: { 'categoryData.name': { $regex: categoryId, $options: 'i' } } },
         ]
         : [];
-
     const matchStage: Record<string, unknown> = { isActive: true };
-    if (category && isObjectId(category))
-        matchStage.category = new mongoose.Types.ObjectId(category);
-    if (vendor) matchStage.vendor = vendor;
+    if (categoryId && isObjectId(categoryId))
+        matchStage.category = new mongoose.Types.ObjectId(categoryId);
     if (minPrice !== undefined || maxPrice !== undefined) {
         matchStage.price = {
             ...(minPrice !== undefined && { $gte: minPrice }),
@@ -69,17 +70,39 @@ export const searchProducts = async (params: SearchProductInput["query"]) => {
             { $sort: sortStage },
         ];
 
-    const projectStage: PipelineStage = {
-        $project: {
-            name: 1, slug: 1, price: 1, discountPrice: 1, stock: 1,
-            images: { $slice: ["$images", 1] },
-            ratings: 1, category: 1, vendor: 1, tags: 1,
-            ...(q && { score: { $meta: "searchScore" } }),
-        },
-    };
-
     const [data, total] = await Promise.all([
-        Product.aggregate([...pipeline, { $skip: skip }, { $limit: limit }, projectStage]),
+        Product.aggregate([...pipeline, { $skip: Number(skip) }, { $limit: Number(limit) },
+        ...(categoryLookupStages.length === 0 ? [{
+            $lookup: {
+                from: 'categories',
+                localField: 'category',
+                foreignField: '_id',
+                as: 'categoryData',
+            },
+        }] : []),
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'vendor',
+                foreignField: '_id',
+                as: 'vendorData',
+                pipeline: [
+                    { $match: { isApproved: true, role: "vendor" } },
+                    { $project: { storeName: 1, storeAvatar: 1, isApproved: 1 } },
+                ],
+            },
+        },
+        {
+            $project: {
+                name: 1, slug: 1, price: 1, discountPrice: 1, stock: 1,
+                images: { $slice: ["$images", 1] },
+                ratings: 1, tags: 1,
+                categoryData: { name: 1, slug: 1 },
+                vendorData: 1,
+                ...(q && { score: { $meta: "searchScore" } }),
+            },
+        }
+        ]),
         Product.aggregate([...pipeline, { $count: "total" }]),
     ]);
 

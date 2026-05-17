@@ -35,6 +35,7 @@ interface IShippingAddress {
 
 export interface IOrder extends Document {
     buyer: mongoose.Types.ObjectId;
+    phone: string;
     items: IOrderItem[];
     shippingAddress: IShippingAddress;
     subtotal: number;
@@ -68,6 +69,7 @@ const orderItemSchema = new Schema<IOrderItem>(
     { _id: false }
 );
 
+
 const shippingAddressSchema = new Schema<IShippingAddress>(
     {
         fullName: { type: String, required: true },
@@ -85,6 +87,7 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
 const orderSchema = new Schema<IOrder>(
     {
         buyer: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        phone: { type: String, required: true },
         items: { type: [orderItemSchema], required: true },
         shippingAddress: { type: shippingAddressSchema, required: true },
         subtotal: { type: Number, required: true, min: 0 },

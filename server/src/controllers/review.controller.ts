@@ -64,17 +64,32 @@ export const deleteReview = asyncHandler(async (req: Request, res: Response) => 
 export const toggleLike = asyncHandler(async (req: Request, res: Response) => {
     const { id: userId } = (req as AuthRequest).user;
     const review = await Review.findById(req.params.id);
+    const { type } = req.body;
     if (!review) throw new ApiError(404, "Review not found");
 
-    const alreadyLiked = review.likes.some(id => id.toString() === userId);
-    if (alreadyLiked) {
-        review.likes = review.likes.filter(id => id.toString() !== userId) as any;
-    } else {
-        review.likes.push(userId as any);
-    }
-    await review.save();
+    if (type === "like") {
+        const alreadyLiked = review.likes.some(id => id.toString() === userId);
+        if (alreadyLiked) {
+            review.likes = review.likes.filter(id => id.toString() !== userId) as any;
+        } else {
+            review.likes.push(userId as any);
+        }
+        await review.save();
 
-    return res.json(new ApiResponse(200, { likes: review.likes.length }, alreadyLiked ? "Like removed" : "Review liked"));
+        return res.json(new ApiResponse(200, { likes: review.likes.length }, alreadyLiked ? "Like removed" : "Review liked"));
+    } else if (type === "dislike") {
+        const alreadyDisliked = review.dislikes.some(id => id.toString() === userId);
+        if (alreadyDisliked) {
+            review.dislikes = review.dislikes.filter(id => id.toString() !== userId) as any;
+        } else {
+            review.dislikes.push(userId as any);
+        }
+        await review.save();
+
+        return res.json(new ApiResponse(200, { dislikes: review.dislikes.length }, alreadyDisliked ? "Dislike removed" : "Review disliked"));
+    }
+    throw new ApiError(400, "Invalid like type");
+
 });
 
 export const getProductReviews = asyncHandler(async (req: Request, res: Response) => {
@@ -129,7 +144,7 @@ export const toggleApproval = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const adminDeleteReview = asyncHandler(async (req: Request, res: Response) => {
-    const review = await Review.findByIdAndDelete(req.params.id);
+    const review = await Review.findOneAndDelete({ _id: req.params.id });
     if (!review) throw new ApiError(404, "Review not found");
 
     return res.json(new ApiResponse(200, null, "Review deleted by admin"));

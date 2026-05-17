@@ -4,7 +4,6 @@ import User from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
 import crypto from "crypto";
-import { sendEmail } from "../services/email.service.js";
 import env from "../config/env.js";
 import { attachCookieToResponse, generateAccessToken, generateRefreshToken, createJwtPayload } from "../utils/generateToken.js";
 import { emailQueue } from "../jobs/queue.js";

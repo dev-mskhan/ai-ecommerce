@@ -13,7 +13,7 @@ interface ChatMessagePayload {
 }
 
 export const registerChatHandlers = (io: Server, socket: Socket): void => {
-    const userId = socket.data.user._id.toString();
+    const userId = socket.data.user.id.toString();
 
     // Join a specific chat room
     socket.on("chat:join", (chatId: string) => {

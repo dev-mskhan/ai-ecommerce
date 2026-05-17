@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
+import type { Server } from "socket.io";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/apiError.js";
 import ApiResponse from "../utils/apiResponse.js";
@@ -9,9 +10,12 @@ import Coupon from "../models/Coupon.model.js";
 import type { JwtPayload } from "../utils/generateToken.js";
 import { validateAndCalculateCoupon } from "./coupon.controller.js";
 import { createPaymentIntent, stripe } from "../services/payment.service.js";
+import { emitOrderStatusUpdate } from "../sockets/order.socket.js";
+import { createAndEmitNotification } from "../sockets/notification.socket.js";
 
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
+    const io: Server = req.app.get("io");
     const body = req.body;
 
     const session = await mongoose.startSession();
@@ -74,9 +78,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
         let clientSecret: string | null = null;
 
         if (body.paymentMethod === "stripe") {
-            const intent = await createPaymentIntent(total, "usd", {
-                buyerId,
-            });
+            const intent = await createPaymentIntent(total, "usd", { buyerId });
             paymentIntentId = intent.id;
             clientSecret = intent.client_secret;
         }
@@ -107,12 +109,21 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
             });
         }
 
+        const stockUpdates: Array<{ productId: string; newStock: number; vendorId: string }> = [];
+
         for (const item of body.items) {
-            await Product.findByIdAndUpdate(
+            const updated = await Product.findByIdAndUpdate(
                 item.product,
                 { $inc: { stock: -item.quantity } },
-                { session }
+                { session, new: true }
             );
+            if (updated) {
+                stockUpdates.push({
+                    productId: item.product,
+                    newStock: updated.stock,
+                    vendorId: updated.vendor.toString(),
+                });
+            }
         }
 
         if (appliedCoupon) {
@@ -124,6 +135,25 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
         }
 
         await session.commitTransaction();
+
+        await emitOrderStatusUpdate(io, {
+            orderId: order._id.toString(),
+            status: "pending",
+            buyerId,
+            vendorId: vendorIds[0]!,
+            stockUpdates,
+        });
+
+        const uniqueVendorIds = [...new Set(vendorIds)];
+        for (const vendorId of uniqueVendorIds) {
+            await createAndEmitNotification(io, {
+                recipient: vendorId as any,
+                type: "order_placed",
+                title: "New Order Received",
+                message: `A new order #${order._id.toString().slice(-6).toUpperCase()} has been placed.`,
+                data: { orderId: order._id.toString() },
+            });
+        }
 
         return res.status(201).json(new ApiResponse(201, {
             ...(clientSecret && { clientSecret }),
@@ -159,7 +189,7 @@ export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
 export const getOrderById = asyncHandler(async (req: Request, res: Response) => {
     const { id: userId, role } = (req as Request & { user: JwtPayload }).user;
 
-    const order = await Order.findById(req.params.id).populate("items.product", "name images slug");
+    const order = await Order.findById(req.params.id).populate("items.product", "name images slug").lean();
     if (!order) throw new ApiError(404, "Order not found");
 
     const isOwner = order.buyer.toString() === userId;
@@ -173,6 +203,7 @@ export const getOrderById = asyncHandler(async (req: Request, res: Response) => 
 
 export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
+    const io: Server = req.app.get("io");
     const { status, reason }: { status: "cancelled" | "delivered" | "refunded"; reason?: string } = req.body;
 
     const session = await mongoose.startSession();
@@ -183,9 +214,22 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
         if (!order) throw new ApiError(404, "Order not found");
         if (order.status === status) throw new ApiError(400, `Order is already ${status}`);
 
+        const stockUpdates: Array<{ productId: string; newStock: number; vendorId: string }> = [];
+
         if (status === "cancelled") {
             for (const item of order.items) {
-                await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } }, { session });
+                const updated = await Product.findByIdAndUpdate(
+                    item.product,
+                    { $inc: { stock: item.quantity } },
+                    { session, new: true }
+                );
+                if (updated) {
+                    stockUpdates.push({
+                        productId: item.product.toString(),
+                        newStock: updated.stock,
+                        vendorId: updated.vendor.toString(),
+                    });
+                }
             }
             if (order.coupon) {
                 await Coupon.findByIdAndUpdate(order.coupon, { $inc: { usedCount: -1 } }, { session });
@@ -201,6 +245,29 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
         await order.save({ session });
 
         await session.commitTransaction();
+
+        const uniqueVendorIds = [...new Set(order.items.map((i) => i.vendor.toString()))];
+
+        await emitOrderStatusUpdate(io, {
+            orderId: order._id.toString(),
+            status,
+            buyerId: order.buyer.toString(),
+            vendorId: uniqueVendorIds[0]!,
+            stockUpdates,
+        });
+
+        if (status === "cancelled") {
+            for (const vendorId of uniqueVendorIds) {
+                await createAndEmitNotification(io, {
+                    recipient: vendorId as any,
+                    type: "order_cancelled",
+                    title: "Order Cancelled by Admin",
+                    message: `Order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled.`,
+                    data: { orderId: order._id.toString(), reason },
+                });
+            }
+        }
+
         return res.json(new ApiResponse(200, order, `Order ${status}`));
     } catch (err) {
         await session.abortTransaction();
@@ -212,6 +279,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
 
 export const vendorUpdateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
     const { id: vendorId } = (req as Request & { user: JwtPayload }).user;
+    const io: Server = req.app.get("io");
     const { status, note }: { status: "confirmed" | "processing" | "shipped"; note?: string } = req.body;
 
     const order = await Order.findById(req.params.id);
@@ -234,11 +302,21 @@ export const vendorUpdateOrderStatus = asyncHandler(async (req: Request, res: Re
 
     order.statusHistory.push({ status: order.status, changedAt: new Date(), note });
     await order.save();
+
+    // Emit to buyer
+    await emitOrderStatusUpdate(io, {
+        orderId: order._id.toString(),
+        status: order.status as any,
+        buyerId: order.buyer.toString(),
+        vendorId,
+    });
+
     return res.json(new ApiResponse(200, order, "Order status updated"));
 });
 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     const { id: buyerId } = (req as Request & { user: JwtPayload }).user;
+    const io: Server = req.app.get("io");
     const body = req.body;
 
     const session = await mongoose.startSession();
@@ -251,8 +329,21 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
         if (!["pending", "confirmed", "processing"].includes(order.status))
             throw new ApiError(400, `Cannot cancel an order in "${order.status}" status`);
 
+        const stockUpdates: Array<{ productId: string; newStock: number; vendorId: string }> = [];
+
         for (const item of order.items) {
-            await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } }, { session });
+            const updated = await Product.findByIdAndUpdate(
+                item.product,
+                { $inc: { stock: item.quantity } },
+                { session, new: true }
+            );
+            if (updated) {
+                stockUpdates.push({
+                    productId: item.product.toString(),
+                    newStock: updated.stock,
+                    vendorId: updated.vendor.toString(),
+                });
+            }
         }
 
         if (order.coupon) {
@@ -266,6 +357,27 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
         await order.save({ session });
 
         await session.commitTransaction();
+
+        const uniqueVendorIds = [...new Set(order.items.map((i) => i.vendor.toString()))];
+
+        await emitOrderStatusUpdate(io, {
+            orderId: order._id.toString(),
+            status: "cancelled",
+            buyerId,
+            vendorId: uniqueVendorIds[0]!,
+            stockUpdates,
+        });
+
+        for (const vendorId of uniqueVendorIds) {
+            await createAndEmitNotification(io, {
+                recipient: vendorId as any,
+                type: "order_cancelled",
+                title: "Order Cancelled by Buyer",
+                message: `Order #${order._id.toString().slice(-6).toUpperCase()} was cancelled by the buyer.`,
+                data: { orderId: order._id.toString(), reason: body.reason },
+            });
+        }
+
         return res.json(new ApiResponse(200, order, "Order cancelled"));
     } catch (err) {
         await session.abortTransaction();
@@ -330,6 +442,7 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
 
     const [orders, total] = await Promise.all([
         Order.find(filter)
+            .select("_id total items status paymentStatus createdAt")
             .sort({ [sortBy]: order === "asc" ? 1 : -1 })
             .skip((page - 1) * limit)
             .limit(limit)

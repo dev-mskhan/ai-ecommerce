@@ -1,4 +1,3 @@
-// admin.routes.ts
 import { Router } from "express";
 import authHandler from "../middleware/auth.middleware.js";
 import roleCheck from "../middleware/roleCheck.middleware.js";

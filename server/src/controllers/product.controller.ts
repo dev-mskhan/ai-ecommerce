@@ -9,6 +9,9 @@ import type { JwtPayload } from "../utils/generateToken.js";
 import mongoose from "mongoose";
 import { productEmbeddingQueue } from "../jobs/queue.js";
 import redis from "../config/redis.js";
+import type { Server } from "socket.io";
+import { emitStockUpdate } from "../sockets/stock.socket.js";
+import { createAndEmitNotification } from "../sockets/notification.socket.js";
 
 type AuthRequest = Request & { user: JwtPayload };
 
@@ -34,7 +37,11 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
     ).then(imgs => imgs.map(i => i.url)).catch(() => { throw new ApiError(502, "Image upload failed"); });
 
     const product = await Product.create({ ...req.body, images, vendor: userId });
+    const io: Server = req.app.get("io");
 
+    if (product.stock !== undefined) {
+        await emitStockUpdate(io, product._id.toString(), product.stock, userId);
+    }
     await Promise.all([
         bustVendorCache(userId),
         productEmbeddingQueue.add("generate-embedding", { productId: product._id }),
@@ -70,9 +77,12 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
 
     await product.save();
 
+    const io: Server = req.app.get("io");
+    if (stock !== undefined) {
+        await emitStockUpdate(io, product._id.toString(), product.stock, userId);
+    }
     const EMBEDDING_FIELDS = ["name", "description", "tags", "price"];
     const shouldRegenerate = EMBEDDING_FIELDS.some(f => f in req.body);
-
     await Promise.all([
         bustVendorCache(userId),
         bustProductCache(product.slug),
@@ -90,7 +100,15 @@ export const deleteProduct = asyncHandler(async (req: Request, res: Response) =>
 
     await Promise.allSettled(product.images.map(img => deleteCloudinaryImage(extractPublicId(img))));
     await product.deleteOne();
+    const io: Server = req.app.get("io");
 
+    await createAndEmitNotification(io, {
+        recipient: product.vendor.toString() as any,
+        type: "system",
+        title: "Product Removed by Admin",
+        message: `Your product "${product.name}" has been removed by an admin.`,
+        data: { productId: product._id.toString() },
+    });
     await Promise.all([bustVendorCache(userId), bustProductCache(product.slug)]);
 
     res.json(new ApiResponse(200, null, "Product deleted"));
@@ -108,7 +126,7 @@ export const getVendorProducts = asyncHandler(async (req: Request, res: Response
     const [products, total] = await Promise.all([
         Product.find({ vendor: userId })
             .populate("category", "name slug")
-            .select("name slug price discountPrice stock images ratings isActive isFeatured createdAt")
+            .select("name slug price discountPrice images ratings isActive isFeatured createdAt")
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -130,7 +148,17 @@ export const toggleProductStatus = asyncHandler(async (req: Request, res: Respon
 
     product.isActive = !product.isActive;
     await product.save();
+    const io: Server = req.app.get("io");
 
+    if (!product.isActive) {
+        await createAndEmitNotification(io, {
+            recipient: userId as any,
+            type: "system",
+            title: "Product Deactivated",
+            message: `"${product.name}" has been deactivated.`,
+            data: { productId: product._id.toString() },
+        });
+    }
     await Promise.all([bustVendorCache(userId), bustProductCache(product.slug)]);
 
     res.json(new ApiResponse(200, product, `Product ${product.isActive ? "activated" : "deactivated"}`));
@@ -166,6 +194,12 @@ export const getProductBySlug = asyncHandler(async (req: Request, res: Response)
     res.json(new ApiResponse(200, product, "Product fetched"));
 });
 
+export const getProductById = asyncHandler(async (req: Request, res: Response) => {
+    const product = await Product.findById(req.params.id).populate("category", "name slug").lean();
+    if (!product) throw new ApiError(404, "Product not found");
+    res.json(new ApiResponse(200, product, "Product fetched"));
+});
+
 export const adminDeleteProduct = asyncHandler(async (req: Request, res: Response) => {
     const product = await Product.findById(req.params.id);
     if (!product) throw new ApiError(404, "Product not found");
@@ -184,7 +218,15 @@ export const toggleFeaturedProduct = asyncHandler(async (req: Request, res: Resp
 
     product.isFeatured = !product.isFeatured;
     await product.save();
+    const io: Server = req.app.get("io");
 
+    await createAndEmitNotification(io, {
+        recipient: product.vendor.toString() as any,
+        type: "system",
+        title: product.isFeatured ? "Product Featured" : "Product Unfeatured",
+        message: `"${product.name}" has been ${product.isFeatured ? "added to" : "removed from"} featured products.`,
+        data: { productId: product._id.toString() },
+    });
     await bustProductCache(product.slug);
 
     return res.json(new ApiResponse(200, product, `Product ${product.isFeatured ? "featured" : "unfeatured"}`));

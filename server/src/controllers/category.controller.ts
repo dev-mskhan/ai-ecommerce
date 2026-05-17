@@ -61,6 +61,20 @@ export const getCategoryById = asyncHandler(async (req: Request, res: Response) 
     return res.json(new ApiResponse(200, category, "Category fetched"));
 });
 
+export const getCategoryBySlug = asyncHandler(async (req: Request, res: Response) => {
+    const cacheKey = `category-slug:${req.params.slug}`;
+
+    const cached = await redis.get(cacheKey);
+    if (cached) return res.json(new ApiResponse(200, JSON.parse(cached), "Category fetched"));
+
+    const category = await Category.findOne({ slug: req.params.slug }).select("name slug images").lean();
+    if (!category) throw new ApiError(404, "Category not found");
+
+    await redis.set(cacheKey, JSON.stringify(category), "EX", CACHE_TTL);
+
+    return res.json(new ApiResponse(200, category, "Category fetched"));
+});
+
 export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
     const category = await Category.findById(req.params.id);
     if (!category) throw new ApiError(404, "Category not found");

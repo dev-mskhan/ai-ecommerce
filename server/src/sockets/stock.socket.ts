@@ -4,17 +4,12 @@ import { createAndEmitNotification } from "./notification.socket.js";
 
 const LOW_STOCK_THRESHOLD = 5;
 
-/**
- * Broadcast a stock update to everyone watching a product page
- * and notify the vendor if stock is low / zero.
- */
 export const emitStockUpdate = async (
     io: Server,
     productId: string,
     newStock: number,
     vendorId: string
 ): Promise<void> => {
-    // Broadcast to all clients subscribed to this product's stock room
     io.to(`stock:${productId}`).emit("stock:updated", { productId, stock: newStock });
 
     if (newStock === 0) {
@@ -37,7 +32,6 @@ export const emitStockUpdate = async (
 };
 
 export const registerStockHandlers = (io: Server, socket: Socket): void => {
-    // Client subscribes to live stock updates for a specific product
     socket.on("stock:watch", (productId: string) => {
         socket.join(`stock:${productId}`);
     });
@@ -46,7 +40,6 @@ export const registerStockHandlers = (io: Server, socket: Socket): void => {
         socket.leave(`stock:${productId}`);
     });
 
-    // Admin / vendor can manually trigger a stock refresh broadcast
     socket.on("stock:refresh", async (productId: string) => {
         const product = await Product.findById(productId).select("stock vendor").lean();
         if (!product) return;

@@ -27,10 +27,11 @@ export const searchProductsByEmbedding = async (queryEmbedding: number[]) => {
                 queryVector: queryEmbedding,
                 numCandidates: 100,
                 limit: 8,
+                filter: { isActive: true }
             },
         },
-        { $match: { isActive: true } },
         { $addFields: { score: { $meta: "vectorSearchScore" } } },
+        // { $match: { score: { $gte: 0.25 } } },
         {
             $lookup: {
                 from: 'categories',
@@ -72,7 +73,6 @@ export const processAIChat = async (
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
     })) ?? [];
-    console.log("historyContents: ", historyContents);
     const result = await genAI.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [
@@ -80,17 +80,27 @@ export const processAIChat = async (
             { role: "user", parts: [{ text: userMessage }] },
         ],
         config: {
-            systemInstruction: `You are a smart shopping assistant. Recommend from these products only: ${JSON.stringify(products)}. If nothing matches, say so honestly.`,
+            systemInstruction: `You are a smart shopping assistant. 
+                Recommend ONLY products with a relevance score above 0.25 from this list: ${JSON.stringify(products)}.
+                Each product has a 'score' field (0-1). give most accurate and relevant answer.`,
         },
-    });
-
-    const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-
+    })
+    let aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    aiResponse = aiResponse
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`{1,3}[^`]*`{1,3}/g, '')
+        .replace(/#{1,6}\s/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    const recommendedProducts = products.filter(p =>
+        aiResponse.toLowerCase().includes(p.name.toLowerCase())
+    );
     if (chat) {
         chat.messages.push({ role: "user", content: userMessage, createdAt: new Date() });
         chat.messages.push({ role: "assistant", content: aiResponse, products: products.map(p => p._id), createdAt: new Date() });
         await chat.save();
     }
 
-    return { chatId: chat?._id ?? null, message: aiResponse, products };
+    return { chatId: chat?._id ?? null, message: aiResponse, products: recommendedProducts };
 };

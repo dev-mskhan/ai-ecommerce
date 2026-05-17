@@ -79,9 +79,10 @@ paths:
   # Products - Public
   /products:
     $ref: ./paths/product.yaml#/get-products
-  /products/{slug}:
+  /products/{id}:
+    $ref: ./paths/product.yaml#/get-product-by-id
+  /products/slug/{slug}:
     $ref: ./paths/product.yaml#/get-product-by-slug
-
   # Products - Vendor
   /products/vendor:
     $ref: ./paths/product.yaml#/vendor-products

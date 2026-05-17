@@ -11,11 +11,11 @@ import mongoose from "mongoose";
 export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
     const { id } = (req as Request & { user: JwtPayload }).user;
     const redisUser = await redis.get(`user:${id}`);
-    if (redisUser) res.status(200).json(new ApiResponse(200, JSON.parse(redisUser), "User fetched successfully"))
+    if (redisUser) return res.json(new ApiResponse(200, JSON.parse(redisUser), "User fetched successfully"))
     const user = await User.findById(id);
     if (!user) throw new ApiError(404, "User not found");
     await redis.set(`user:${id}`, JSON.stringify(user), "EX", 60 * 60 * 24 * 30);
-    res.status(200).json(new ApiResponse(200, user, "User fetched successfully"))
+    return res.json(new ApiResponse(200, user, "User fetched successfully"))
 })
 export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
     const { id } = (req as Request & { user: JwtPayload }).user;

@@ -5,6 +5,7 @@ import {
     getAllProducts, getProductBySlug,
     adminDeleteProduct, toggleFeaturedProduct,
     updateStock,
+    getProductById,
 } from "../controllers/product.controller.js";
 import authHandler from "../middleware/auth.middleware.js";
 import roleCheck from "../middleware/roleCheck.middleware.js";
@@ -16,7 +17,8 @@ const router = Router();
 
 // public routes
 router.get("/", validateRequest(searchProductSchema, "query"), getAllProducts);
-router.get("/:slug", getProductBySlug);
+router.get("/:id", getProductById);
+router.get("/slug/:slug", getProductBySlug);
 
 // vendor routes
 router.get("/vendor", authHandler, roleCheck("vendor"), getVendorProducts);
@@ -25,6 +27,7 @@ router.patch("/vendor/:id", authHandler, roleCheck("vendor"), parseFormData("pro
 router.delete("/vendor/:id", authHandler, roleCheck("vendor"), deleteProduct);
 router.patch("/vendor/:id/toggle", authHandler, roleCheck("vendor"), toggleProductStatus);
 router.patch('/vendor/:id/stock', authHandler, roleCheck('vendor'), validateRequest(updateStockSchema, "body", "params"), updateStock);
+
 // admin routes
 router.delete("/admin/:id", authHandler, roleCheck("admin"), adminDeleteProduct);
 router.patch("/admin/:id/feature", authHandler, roleCheck("admin"), toggleFeaturedProduct);

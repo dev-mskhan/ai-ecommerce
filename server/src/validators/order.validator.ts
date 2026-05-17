@@ -23,7 +23,10 @@ export const createOrderSchema = z.object({
     body: z.object({
         items: z.array(orderItemSchema).min(1, "Order must have at least one item"),
         shippingAddress: shippingAddressSchema,
-        paymentMethod: z.enum(["stripe", "mock", "cod"]),
+        paymentMethod: z.enum(["stripe", "mock", "cod"]), phone: z.string().regex(
+            /^(\+92|0)3[0-9]{9}$/,
+            "Must be a valid Pakistani number (03001234567 or +923001234567)"
+        ),
         couponCode: z.string().trim().optional(),
     })
 });

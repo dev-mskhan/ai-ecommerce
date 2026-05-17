@@ -36,14 +36,14 @@ export const updateProductSchema = baseProductSchema.partial().refine(
 export const searchProductSchema = z.object({
     query: z.object({
         q: z.string().min(1).optional(),
-        category: z.string().optional(),
-        vendor: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-        minPrice: z.coerce.number().min(0).optional(),
-        maxPrice: z.coerce.number().min(0).optional(),
-        rating: z.coerce.number().min(0).max(5).optional(),
-        page: z.coerce.number().int().min(1).optional(),
-        limit: z.coerce.number().int().min(1).max(50).optional(),
-        sort: z.enum(["price_asc", "price_desc", "rating", "newest"]).optional()
+        categoryId: z.string().regex(/^[a-f\d]{24}$/i, "Invalid category ID").optional(),
+        page: z.coerce.number().min(1).default(1),
+        limit: z.coerce.number().min(1).max(100).default(20),
+        minPrice: z.coerce.number().optional(),
+        maxPrice: z.coerce.number().optional(),
+        rating: z.coerce.number().optional(),
+        sort: z.enum(["price_asc", "price_desc", "rating", "newest", "discountPrice_asc", "discountPrice_desc"]).optional(),
+        order: z.enum(["asc", "desc"]).optional().default("desc"),
     }),
 });
 export const updateStockSchema = z.object({

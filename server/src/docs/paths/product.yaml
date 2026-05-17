@@ -79,7 +79,40 @@ get-product-by-slug:
               statusCode: 404
               data: null
               message: "Product not found"
-
+get-product-by-id:
+  get:
+    tags: [Products]
+    summary: Get product by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Product fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                name: "Nike Air Max 90"
+                slug: "nike-air-max-90"
+                price: 120
+                images: []
+                isActive: true
+              message: "Product fetched"
+      '404':
+        description: Product not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Product not found"
 # Vendor Routes
 vendor-products:
   get:
@@ -270,7 +303,44 @@ toggle-product-status:
               statusCode: 200
               data: {}
               message: "Product activated"
-
+update-stock:
+  patch:
+    tags: [Products - Vendor]
+    summary: Update product stock
+    security:
+      - cookieAuth: []
+    parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stock]
+              properties:
+                stock:
+                  type: number
+    responses:
+      '200':
+        description: Stock updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: {}
+              message: "Stock updated"
+      '404':
+        description: Product not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Product not found"
 # Admin Routes
 admin-delete-product:
   delete:

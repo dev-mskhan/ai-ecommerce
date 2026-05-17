@@ -11,7 +11,7 @@ const errorHandler = (
 ) => {
     let statusCode = 500;
     let message = "Internal Server Error";
-
+    console.log(error)
     // custom app error
     if (error instanceof ApiError) {
         statusCode = error.statusCode;

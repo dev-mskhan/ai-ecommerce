@@ -6,7 +6,7 @@ export const signupSchemaBuyer = z.object({
         email: z.string().email("Invalid email").toLowerCase().trim(),
         password: z.string()
             .min(6, "Password must be at least 6 characters")
-            .regex(/[^a-zA-Z0-9]/, "Must contain a special character"),
+            .regex(/[.!@#$%^&*]/, "Must contain a special character"),
     })
 
 });
@@ -14,7 +14,9 @@ export const signupSchemaBuyer = z.object({
 export const loginSchema = z.object({
     body: z.object({
         email: z.string().email("Invalid email").toLowerCase().trim(),
-        password: z.string().min(1, "Password is required"),
+        password: z.string()
+            .min(6, "Password must be at least 6 characters")
+            .regex(/[!.@#$%^&*]/, "Must contain a special character"),
     })
 });
 
@@ -30,7 +32,7 @@ export const resetPasswordSchema = z.object({
         password: z
             .string()
             .min(6)
-            .regex(/[^a-zA-Z0-9]/, "Must contain a special character"),
+            .regex(/[.!@#$%^&*]/, "Must contain a special character"),
         confirmPassword: z.string(),
     })
 }).refine(

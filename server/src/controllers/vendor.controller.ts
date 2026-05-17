@@ -83,7 +83,7 @@ const bustVendorCache = async (vendorId: string, ...keys: string[]) => {
     await pipeline.exec();
 };
 
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+// ANALYTICS 
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
     const vendorId = (req as AuthRequest).user?.id;
