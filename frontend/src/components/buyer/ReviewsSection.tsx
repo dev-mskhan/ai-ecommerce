@@ -7,7 +7,7 @@ import { CustomDropdown } from '../ui/CustomDropdown';
 import { useProductReviews, useReviewActions } from '@store/hooks/useReview';
 import { useAppSelector } from '@store/index';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import { riftToast } from '../common/toastContainer';
 
 interface ReviewsSectionProps {
   productId: string;
@@ -48,11 +48,11 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ productId, vendo
   const onSubmitReview = async (formData: ReviewForm) => {
     const result = await createReview({ product: productId, ...formData });
     if ((createError as any)?.status === 403) {
-      toast.error("You can only review a product after you have ordered it.");
+      riftToast.error("You can only review a product after you have ordered it.");
     } else if (result) {
-      toast.success("Your review has been submitted for approval.");
+      riftToast.success("Your review has been submitted for approval.");
     } else {
-      toast.error("Failed to create review");
+      riftToast.error("Failed to create review");
     }
     reset();
   };

@@ -8,6 +8,7 @@ import {
     vendorReply,
     toggleApproval,
     adminDeleteReview,
+    getUserReviews,
 } from "../controllers/review.controller.js";
 import authHandler from "../middleware/auth.middleware.js";
 import validateRequest from "../middleware/validate.middleware.js";
@@ -29,6 +30,7 @@ router.post("/", authHandler, roleCheck("buyer"), validateRequest(createReviewSc
 router.patch("/:id", authHandler, roleCheck("buyer"), validateRequest(updateReviewSchema, "body", "params"), updateReview);
 router.delete("/:id", authHandler, roleCheck("buyer"), deleteReview);
 router.post("/:id/like", authHandler, roleCheck("buyer"), toggleLike);
+router.get("/user", authHandler, roleCheck("buyer"), getUserReviews);
 
 // Vendor
 router.post("/:id/reply", authHandler, roleCheck("vendor"), validateRequest(vendorReplySchema, "body", "params"), vendorReply);

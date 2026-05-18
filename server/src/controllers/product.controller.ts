@@ -165,7 +165,7 @@ export const toggleProductStatus = asyncHandler(async (req: Request, res: Respon
 });
 
 export const getAllProducts = asyncHandler(async (req: Request, res: Response) => {
-    const params = req.query;
+    const params: any = req.query;
     const cacheKey = `all_products:${JSON.stringify(params)}`;
 
     const cached = await redis.get(cacheKey);

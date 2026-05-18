@@ -5,7 +5,7 @@ import { formatPrice, cn } from '@/utils/helpers';
 import { RatingStars } from '../common/RatingStars';
 import { useCartStore } from '@store/zustand/cartStore';
 import { useWishlistStore } from '@store/zustand/wishlistStore';
-import toast from 'react-hot-toast';
+import { riftToast } from '../common/toastContainer';
 
 interface Vendor {
   _id: string;
@@ -65,14 +65,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       categoryId: category?._id,
       quantity: 1,
     });
-    toast.success('Added to cart');
+    riftToast.success('Added to cart');
   };
 
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isFavorite) {
       removeWishlistItem(product._id);
-      toast.error('Removed from wishlist');
+      riftToast.error('Removed from wishlist');
     } else {
       addWishlistItem({
         id: product._id,
@@ -84,7 +84,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         vendorName: vendor?.storeName ?? '',
         categoryName: category?.name ?? '',
       });
-      toast.success('Saved to wishlist');
+      riftToast.success('Saved to wishlist');
     }
   };
 

@@ -6,6 +6,7 @@ import { formatPrice, cn } from '@/utils/helpers';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { useCouponActions } from '@/store/hooks/useCoupon';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const CartPage: React.FC = () => {
   const { items, removeItem, updateQuantity, getTotal } = useCartStore();
@@ -23,16 +24,16 @@ export const CartPage: React.FC = () => {
   console.log(items);
   const handleApplyCoupon = async () => {
     if (!coupon) {
-      toast.error("Please enter a coupon code");
+      riftToast.error("Please enter a coupon code");
       return;
     }
     const { data } = await applyCoupon({ code: coupon, orderAmount: total });
     console.log(data);
     if (isSuccess) {
-      toast.success('Coupon applied successfully');
+      riftToast.success('Coupon applied successfully');
       setAppliedDiscount(Number(data));
     } else {
-      toast.error("Failed to apply coupon");
+      riftToast.error("Failed to apply coupon");
       return;
     }
 

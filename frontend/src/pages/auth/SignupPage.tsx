@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { Text } from '@/components/ui/Typography';
 import poster2 from "@assets/poster-2.avif"
+import { riftToast } from '@/components/common/toastContainer';
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(50).trim(),
   email: z.string().email("Invalid email").toLowerCase().trim(),
@@ -32,7 +33,7 @@ export const SignupPage: React.FC = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.message)
+      riftToast.error(error.message)
     }
   };
 

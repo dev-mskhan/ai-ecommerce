@@ -149,3 +149,8 @@ export const adminDeleteReview = asyncHandler(async (req: Request, res: Response
 
     return res.json(new ApiResponse(200, null, "Review deleted by admin"));
 });
+export const getUserReviews = asyncHandler(async (req: Request, res: Response) => {
+    const { id: buyerId } = (req as AuthRequest).user;
+    const reviews = await Review.find({ buyer: buyerId }).populate("product", "name images").sort({ createdAt: -1 }).lean();
+    return res.json(new ApiResponse(200, reviews, "Reviews fetched"));
+});

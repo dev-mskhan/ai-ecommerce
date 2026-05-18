@@ -20,7 +20,7 @@ export const ForgotPasswordPage: React.FC = () => {
       await forgotPassword(data).unwrap();
       setStatus("sent");
     } catch (error) {
-      toast.error("Failed to send password reset link");
+      riftToast.error("Failed to send password reset link");
       setStatus("idle");
     }
   };

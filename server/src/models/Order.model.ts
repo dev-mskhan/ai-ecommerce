@@ -124,8 +124,8 @@ const orderSchema = new Schema<IOrder>(
 );
 orderSchema.set("toJSON", {
     transform: (_doc, ret) => {
-        const { _id, __v, paymentIntentId, ...rest } = ret;
-        rest.items = rest.items?.map(({ _id: _, ...item }: any) => item);
+        const { __v, paymentIntentId, ...rest } = ret;
+        rest.items = rest.items?.map(({ ...item }: any) => item);
         return rest;
     },
 });

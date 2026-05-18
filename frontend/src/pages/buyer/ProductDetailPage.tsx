@@ -8,8 +8,7 @@ import { ReviewsSection } from '@/components/buyer/ReviewsSection';
 import { useCartStore } from '@store/zustand/cartStore';
 import { useWishlistStore } from '@store/zustand/wishlistStore';
 import { useProductBySlug } from '@store/hooks/useProduct';
-import { useAppSelector } from '@store/index';
-import toast from 'react-hot-toast';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams();
@@ -57,13 +56,13 @@ export const ProductDetailPage: React.FC = () => {
       vendorName: vendor?.storeName ?? '',
       quantity,
     });
-    toast.success('Added to cart');
+    riftToast.success('Added to cart');
   };
 
   const toggleWishlist = () => {
     if (isFavorite) {
       removeWishlistItem(_id);
-      toast.error('Removed from wishlist');
+      riftToast.error('Removed from wishlist');
     } else {
       addWishlistItem({
         id: _id,
@@ -75,7 +74,7 @@ export const ProductDetailPage: React.FC = () => {
         vendorName: vendor?.storeName ?? '',
         categoryName: category?.name ?? '',
       });
-      toast.success('Saved to wishlist');
+      riftToast.success('Saved to wishlist');
     }
   };
 

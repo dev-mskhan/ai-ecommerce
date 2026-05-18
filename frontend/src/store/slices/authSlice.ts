@@ -4,9 +4,10 @@ import { userApi } from "@store/api/userApi";
 interface AuthState {
     user: Object | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
 }
 
-const initialState: AuthState = { user: null, isAuthenticated: false, };
+const initialState: AuthState = { user: null, isAuthenticated: false, isLoading: true };
 
 const authSlice = createSlice({
     name: "auth",
@@ -15,16 +16,18 @@ const authSlice = createSlice({
     extraReducers: (builder) => {
         builder.addMatcher(
             authApi.endpoints.login.matchFulfilled,
-            (state, { payload }: PayloadAction<{ user: Object }>) => {
-                state.user = payload;
+            (state, { payload }: PayloadAction<any>) => {
+                state.user = payload?.data;
                 state.isAuthenticated = true;
+                state.isLoading = false;
             }
         );
         builder.addMatcher(
             authApi.endpoints.verifyEmail.matchFulfilled,
-            (state, { payload }: PayloadAction<{ user: Object }>) => {
-                state.user = payload;
+            (state, { payload }: PayloadAction<any>) => {
+                state.user = payload?.data;
                 state.isAuthenticated = true;
+                state.isLoading = false;
             }
         );
         builder.addMatcher(
@@ -32,13 +35,15 @@ const authSlice = createSlice({
             (state) => {
                 state.user = null;
                 state.isAuthenticated = false;
+                state.isLoading = false;
             }
         );
         builder.addMatcher(
             userApi.endpoints.getCurrentUser.matchFulfilled,
-            (state, { payload }: PayloadAction<{ user: Object }>) => {
-                state.user = payload;
+            (state, { payload }: PayloadAction<any>) => {
+                state.user = payload?.data;
                 state.isAuthenticated = true;
+                state.isLoading = false;
             }
         );
     },

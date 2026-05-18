@@ -4,7 +4,6 @@ import { Search, ShoppingCart, Heart, Bell, User, Menu, X, Sparkles, MessageSqua
 import { cn } from '@/utils/helpers';
 import { useCartStore } from '@/store/zustand/cartStore';
 import { useWishlistStore } from '@/store/zustand/wishlistStore';
-import { Toaster } from 'react-hot-toast';
 import { AiAssistantModal } from '@/components/common/AiAssistantModal';
 import { SearchOverlay } from '@/components/buyer/SearchOverlay';
 import { WishlistOverlay } from '@/components/buyer/WishlistOverlay';
@@ -21,12 +20,10 @@ export const BuyerLayout: React.FC = () => {
   const { data, isSuccess } = useCategories();
   const categories = data?.data;
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const hiddenRoutes = ["/category/", "/categories", "/product/", "/checkout", "/cart", "/payment-success", "/account"];
+  const hiddenRoutes = ["/category/", "/categories", "/product/", "/checkout", "/cart", "/payment-success", "/account", "/vendor-onboarding"];
   const shouldHide = hiddenRoutes.some(path => location.pathname.startsWith(path));
   return (
     <div className="min-h-screen bg-[#FDFCF8]">
-      <Toaster position="top-right" />
-
       {/* Announcement Bar */}
       <div className="bg-[#1A1A1A] text-[#FDFCF8] py-3 px-4 text-center text-[10px] uppercase font-bold tracking-[0.3em] border-b border-[#1A1A1A]">
         ISSUE NO. 14 — FREE DELIVERY ON ALL ORDERS ABOVE RS.2,000 — SUMMER {new Date().getFullYear()}

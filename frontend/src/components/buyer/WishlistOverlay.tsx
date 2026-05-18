@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useWishlistStore } from '@store/zustand/wishlistStore';
 import { useCartStore } from '@store/zustand/cartStore';
 import { formatPrice } from '@/utils/helpers';
-import { toast } from 'react-hot-toast';
+import { riftToast } from '../common/toastContainer';
 
 interface WishlistOverlayProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export const WishlistOverlay: React.FC<WishlistOverlayProps> = ({ isOpen, onClos
       categoryId: item.categoryId,
       quantity: 1,
     });
-    toast.success('Added to cart');
+    riftToast.success('Added to cart');
   };
 
   const handleProductClick = (slug: string) => {

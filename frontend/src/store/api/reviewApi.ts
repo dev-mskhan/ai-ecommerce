@@ -48,6 +48,11 @@ export const reviewApi = createApi({
             query: ({ id }) => ({ url: `/reviews/${id}/admin`, method: "DELETE" }),
             invalidatesTags: (_, __, { productId }) => [{ type: "Reviews", id: productId }],
         }),
+
+        getUserReviews: builder.query<any, void>({
+            query: () => `/reviews/user`,
+            providesTags: ["Reviews"],
+        }),
     }),
 });
 
@@ -60,4 +65,5 @@ export const {
     useVendorReplyMutation,
     useToggleApprovalMutation,
     useAdminDeleteReviewMutation,
+    useGetUserReviewsQuery,
 } = reviewApi;

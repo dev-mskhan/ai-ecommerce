@@ -1,43 +1,54 @@
 import React from 'react';
-import { User, Package, Heart, Star, MessageSquare, MapPin, Shield, Bell, LogOut, Settings, ChevronDown, X } from 'lucide-react';
+import { User, Package, Star, MessageSquare, Bell, LogOut, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/helpers';
 import { ProfileTab } from '@/components/buyer/dashboard/ProfileTab';
 import { OrdersTab } from '@/components/buyer/dashboard/OrdersTab';
-import { WishlistTab } from '@/components/buyer/dashboard/WishlistTab';
 import { ReviewsTab } from '@/components/buyer/dashboard/ReviewsTab';
 import { AIChatHistoryTab } from '@/components/buyer/dashboard/AIChatHistoryTab';
-import { AddressesTab } from '@/components/buyer/dashboard/AddressesTab';
 import { NotificationsTab } from '@/components/buyer/dashboard/NotificationsTab';
+import { useLoginMutation, useLogoutMutation } from '@store/api/authApi';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { riftToast } from '@/components/common/toastContainer';
 
 const menuItems = [
   { icon: User, label: 'Profile', component: <ProfileTab /> },
   { icon: Package, label: 'Orders', component: <OrdersTab /> },
-  { icon: Heart, label: 'Wishlist', component: <WishlistTab /> },
   { icon: Star, label: 'Reviews', component: <ReviewsTab /> },
   { icon: MessageSquare, label: 'AI Chat History', component: <AIChatHistoryTab /> },
-  { icon: MapPin, label: 'Addresses', component: <AddressesTab /> },
   { icon: Bell, label: 'Notifications', component: <NotificationsTab /> },
 ];
 
 export const BuyerDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState('Profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [logout] = useLogoutMutation();
+  const navigate = useNavigate();
 
   const activeComponent = menuItems.find(m => m.label === activeTab)?.component;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      riftToast.error("Logout failed");
+    }
+  };
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-12">
       <header className="flex flex-col md:flex-row justify-between items-end mb-16 border-b border-[#1A1A1A]/10 pb-12 gap-8">
         <div>
-          <div className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#1A1A1A]/40 mb-8">My Account</div>
-          <h1 className="text-5xl lg:text-7xl font-heading font-black italic tracking-tighter uppercase leading-none">
-            User <br /><span className="not-italic font-sans text-sm tracking-[0.5em] font-bold opacity-40">Account</span>
+          <h1 className="text-4xl lg:text-5xl font-heading font-black italic tracking-tighter uppercase leading-none">
+            Dashboard
           </h1>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="outline" className="flex items-center gap-2"><Settings size={14} />Settings</Button>
-          <Button variant="danger" className="flex items-center gap-2"><LogOut size={14} />Logout</Button>
+          <Button variant="danger" onClick={handleLogout} className="flex items-center gap-2">
+            <LogOut size={14} />Logout
+          </Button>
         </div>
       </header>
 

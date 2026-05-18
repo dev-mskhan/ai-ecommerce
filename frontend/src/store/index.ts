@@ -3,7 +3,6 @@ import type { TypedUseSelectorHook } from "react-redux";
 import { useDispatch, useSelector } from "react-redux";
 
 import authReducer from "@slices/authSlice";
-import toastReducer from "@slices/toastSlice";
 import { authApi } from "@api/authApi";
 import { adminApi } from "@api/adminApi";
 import { categoryApi } from "@api/categoryApi";
@@ -15,11 +14,12 @@ import { productApi } from "@api/productApi";
 import { reviewApi } from "@api/reviewApi";
 import { userApi } from "@api/userApi";
 import { vendorApi } from "@api/vendorApi";
+import { supportApi } from "./api/supportApi";
 
 export const store = configureStore({
     reducer: {
         auth: authReducer,
-        toast: toastReducer,
+        [supportApi.reducerPath]: supportApi.reducer,
         [authApi.reducerPath]: authApi.reducer,
         [adminApi.reducerPath]: adminApi.reducer,
         [categoryApi.reducerPath]: categoryApi.reducer,
@@ -34,6 +34,7 @@ export const store = configureStore({
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(
+            supportApi.middleware,
             authApi.middleware,
             adminApi.middleware,
             categoryApi.middleware,

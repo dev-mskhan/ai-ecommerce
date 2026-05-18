@@ -1,111 +1,178 @@
 import React from 'react';
-import { TrendingUp, DollarSign, Wallet, ArrowUpRight, BarChart3, Download } from 'lucide-react';
-import { 
+import { TrendingUp, DollarSign, Wallet, Download, Loader2, AlertCircle } from 'lucide-react';
+import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar
 } from 'recharts';
 import { formatPrice, cn } from '@/utils/helpers';
 import { Button } from '@/components/ui/Button';
+import { useGetRevenueAnalyticsQuery, useGetVendorDashboardQuery } from '@/store/api/vendorApi';
 
-const revenueOverTime = [
-  { name: '01 May', amount: 5000 },
-  { name: '02 May', amount: 8000 },
-  { name: '03 May', amount: 7500 },
-  { name: '04 May', amount: 12000 },
-  { name: '05 May', amount: 18000 },
-  { name: '06 May', amount: 15000 },
-  { name: '07 May', amount: 25000 },
-];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const VendorRevenuePage: React.FC = () => {
+  const { data: revData, isLoading: revLoading, isError: revError } = useGetRevenueAnalyticsQuery();
+  const { data: dashData, isLoading: dashLoading } = useGetVendorDashboardQuery();
+
+  const dash = dashData?.data;
+  const revenueTimeline = (revData?.data ?? []).map((r: any) => ({
+    name: `${MONTH_LABELS[(r._id?.month ?? 1) - 1]} '${String(r._id?.year ?? '').slice(-2)}`,
+    amount: r.netRevenue ?? 0,
+    gross: r.grossRevenue ?? 0,
+    orders: r.orderCount ?? 0,
+  }));
+
+  // Compute projected monthly from last data point or average
+  const avgMonthly =
+    revenueTimeline.length
+      ? revenueTimeline.reduce((a: number, r: any) => a + r.amount, 0) / revenueTimeline.length
+      : 0;
+
+  const kpis = [
+    {
+      label: 'Gross Revenue',
+      value: formatPrice(dash?.grossRevenue ?? 0),
+      delta: '+18.2%',
+      icon: DollarSign,
+    },
+    {
+      label: 'Net Revenue (5% fee)',
+      value: formatPrice(dash?.netRevenue ?? 0),
+      delta: 'STABLE',
+      icon: Wallet,
+    },
+    {
+      label: 'Avg. Monthly',
+      value: formatPrice(avgMonthly),
+      delta: '+5.4%',
+      icon: TrendingUp,
+    },
+  ];
+
+  const handleExport = () => {
+    if (!revenueTimeline.length) return;
+    const headers = ['Month', 'Gross Revenue (RS.)', 'Net Revenue (RS.)', 'Orders'];
+    const rows = revenueTimeline.map((r: any) => [r.name, r.gross.toFixed(2), r.amount.toFixed(2), r.orders]);
+    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'revenue-log.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-16">
-      <header className="flex flex-col md:flex-row justify-between items-end border-b border-[#1A1A1A]/10 pb-12 gap-8">
+    <div className="space-y-14">
+      <header className="flex flex-col md:flex-row justify-between items-end border-b border-[#1A1A1A]/10 pb-10 gap-6">
         <div>
-          <div className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#1A1A1A]/40 mb-8">Yield Analysis</div>
-          <h1 className="text-5xl lg:text-6xl font-heading font-black italic tracking-tighter uppercase leading-none">
-            Revenue <br/> <span className="not-italic font-sans text-sm tracking-[0.5em] font-bold opacity-40">Optimization</span>
+          <div className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#1A1A1A]/40 mb-6">Revenue Overview</div>
+          <h1 className="text-4xl lg:text-5xl font-heading font-black italic tracking-tighter uppercase leading-none">
+            Revenue <br />
+            <span className="not-italic font-sans text-xs tracking-[0.5em] font-bold opacity-40">Breakdown</span>
           </h1>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download size={14} /> Settlement Log
-          </Button>
-        </div>
+        <Button variant="outline" onClick={handleExport} className="flex items-center gap-2" disabled={!revenueTimeline.length}>
+          <Download size={13} /> Download Log
+        </Button>
       </header>
 
+      {/* KPI cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10">
-        {[
-          { label: 'Gross Yield', value: 'RS. 142.8K', delta: '+18.2%', icon: DollarSign },
-          { label: 'Current Balance', value: 'RS. 28.4K', delta: 'STABLE', icon: Wallet },
-          { label: 'Projected Monthly', value: 'RS. 450K', delta: '+5.4%', icon: TrendingUp },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-[#FDFCF8] p-12">
-            <stat.icon size={20} className="opacity-20 mb-8" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40 mb-4">{stat.label}</p>
-            <div className="flex items-baseline gap-4">
-              <p className="text-4xl font-heading font-black tracking-tighter">{stat.value}</p>
-              <span className="text-[10px] font-mono opacity-40">{stat.delta}</span>
+        {kpis.map((stat) => (
+          <div key={stat.label} className="bg-[#FDFCF8] p-10">
+            <stat.icon size={18} className="opacity-20 mb-7" />
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-40 mb-3">{stat.label}</p>
+            <div className="flex items-baseline gap-3">
+              <p className="text-3xl font-heading font-black tracking-tighter">
+                {dashLoading ? <span className="opacity-20">—</span> : stat.value}
+              </p>
+              <span className={cn(
+                'text-[9px] font-mono opacity-40',
+                stat.delta.startsWith('+') ? 'text-green-600' : stat.delta.startsWith('-') ? 'text-red-600' : '',
+              )}>
+                {stat.delta}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-[#FDFCF8] border border-[#1A1A1A]/10 p-12 h-[500px] flex flex-col">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-12 border-b border-[#1A1A1A]/5 pb-4">Inflow Spectrum</h3>
+      {/* Revenue chart */}
+      <div className="bg-[#FDFCF8] border border-[#1A1A1A]/10 p-10 h-[460px] flex flex-col">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-10 border-b border-[#1A1A1A]/5 pb-3">
+          Monthly Net Revenue
+        </h3>
         <div className="flex-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={revenueOverTime}>
-              <defs>
-                <linearGradient id="colorAmt" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1A1A1A" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#1A1A1A" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" strokeOpacity={0.05} />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.4 }} 
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.4 }} 
-              />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1A1A1A', border: 'none', color: '#FDFCF8', fontSize: '10px', borderRadius: '0' }}
-              />
-              <Area type="monotone" dataKey="amount" stroke="#1A1A1A" fillOpacity={1} fill="url(#colorAmt)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {revLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="animate-spin opacity-30" size={24} />
+            </div>
+          ) : revError ? (
+            <div className="flex items-center justify-center gap-2 text-red-600 h-full">
+              <AlertCircle size={16} />
+              <span className="text-xs font-bold uppercase tracking-widest">Failed to load revenue data</span>
+            </div>
+          ) : revenueTimeline.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-[10px] font-bold uppercase tracking-widest opacity-20">
+              No revenue data yet — make your first sale!
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueTimeline}>
+                <defs>
+                  <linearGradient id="colorAmt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1A1A1A" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#1A1A1A" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" strokeOpacity={0.05} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.4 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.4 }} />
+                <Tooltip contentStyle={{ backgroundColor: '#1A1A1A', border: 'none', color: '#FDFCF8', fontSize: '10px', borderRadius: '0' }} />
+                <Area type="monotone" dataKey="amount" stroke="#1A1A1A" fillOpacity={1} fill="url(#colorAmt)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      <section className="space-y-8">
-         <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 border-b border-[#1A1A1A]/10 pb-4">System Disburse Registry</h3>
-         <div className="space-y-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10">
-           {[
-             { id: 'T_042', date: '12 May 2026', amount: 15400, status: 'PROCESSED' },
-             { id: 'T_041', date: '05 May 2026', amount: 8200, status: 'PROCESSED' },
-             { id: 'T_040', date: '28 Apr 2026', amount: 12900, status: 'STAGED' },
-           ].map(trx => (
-             <div key={trx.id} className="bg-[#FDFCF8] p-8 flex justify-between items-center group hover:bg-[#EAE8E2] transition-colors">
-               <div className="flex items-center gap-8">
-                 <span className="font-mono text-[10px] opacity-40">{trx.id}</span>
-                 <p className="text-sm font-heading italic underline decoration-[#1A1A1A]/10">{trx.date}</p>
-               </div>
-               <div className="flex items-center gap-12">
-                 <span className={cn(
-                   "text-[9px] font-bold uppercase tracking-widest px-3 py-1",
-                   trx.status === 'PROCESSED' ? "bg-green-600/10 text-green-700" : "bg-[#1A1A1A]/5 text-[#1A1A1A]/40"
-                 )}>{trx.status}</span>
-                 <span className="text-lg font-bold tracking-tight">{formatPrice(trx.amount).replace('Rs. ', '')}</span>
-               </div>
-             </div>
-           ))}
-         </div>
+      {/* Monthly breakdown table */}
+      <section className="space-y-6">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 border-b border-[#1A1A1A]/10 pb-3">
+          Monthly Breakdown
+        </h3>
+
+        {revLoading ? (
+          <div className="flex justify-center p-10"><Loader2 className="animate-spin opacity-30" size={20} /></div>
+        ) : revenueTimeline.length === 0 ? (
+          <div className="text-center p-10 text-[10px] font-bold uppercase tracking-widest opacity-20">No data</div>
+        ) : (
+          <div className="space-y-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10">
+            <div className="bg-[#1A1A1A] p-5 lg:p-7 grid grid-cols-4 text-[9px] font-bold uppercase tracking-[0.3em] text-[#FDFCF8]/40">
+              <div>Month</div>
+              <div className="text-center">Orders</div>
+              <div className="text-right">Gross (RS.)</div>
+              <div className="text-right">Net (RS.)</div>
+            </div>
+
+            {[...revenueTimeline].reverse().map((r: any, idx: number) => (
+              <div
+                key={idx}
+                className="bg-[#FDFCF8] p-7 grid grid-cols-4 items-center group hover:bg-[#EAE8E2] transition-colors"
+              >
+                <p className="text-sm font-heading italic">{r.name}</p>
+                <p className="text-center font-bold tracking-tighter text-base">{r.orders}</p>
+                <p className="text-right font-mono font-bold text-sm">
+                  {formatPrice(r.gross).replace('Rs. ', '')}
+                </p>
+                <p className="text-right font-mono font-bold text-sm text-green-700">
+                  {formatPrice(r.amount).replace('Rs. ', '')}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

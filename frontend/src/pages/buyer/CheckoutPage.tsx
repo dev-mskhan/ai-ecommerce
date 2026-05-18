@@ -9,6 +9,7 @@ import { useOrderActions } from '@/store/hooks/useOrder';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import toast from 'react-hot-toast';
+import { riftToast } from '@/components/common/toastContainer';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -38,7 +39,7 @@ const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => voi
         return_url: `${window.location.origin}/payment-success`,
       },
     });
-    if (error) toast.error(error.message ?? 'Payment failed');
+    if (error) riftToast.error(error.message ?? 'Payment failed');
     setIsProcessing(false);
   };
 
@@ -121,7 +122,7 @@ export const CheckoutPage: React.FC = () => {
       setClientSecret(res.data.clientSecret);
       setStep('payment');
     } catch {
-      toast.error('Failed to create order, try again.');
+      riftToast.error('Failed to create order, try again.');
     }
   };
 

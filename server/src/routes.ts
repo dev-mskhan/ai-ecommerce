@@ -10,7 +10,6 @@ import couponRoutes from "./routes/coupon.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
-
 const router = express.Router();
 
 router.use('/auth', authRoutes);

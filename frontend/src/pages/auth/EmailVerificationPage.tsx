@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/store/hooks/useAuth';
 import toast from 'react-hot-toast';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const EmailVerificationPage: React.FC = () => {
   const [status, setStatus] = useState<'pending' | 'verifying' | 'success'>('pending');
@@ -24,7 +25,7 @@ export const EmailVerificationPage: React.FC = () => {
           }, 2000);
         } catch {
           setStatus('pending');
-          toast.error("Verification failed");
+          riftToast.error("Verification failed");
           navigate('/signup', { replace: true });
         }
       })()

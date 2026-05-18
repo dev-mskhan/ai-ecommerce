@@ -10,6 +10,7 @@ import { Text } from '@/components/ui/Typography';
 import { useAuth } from '@/store/hooks/useAuth';
 import toast from 'react-hot-toast';
 import poster1 from "@assets/poster-1.avif"
+import { riftToast } from '@/components/common/toastContainer';
 const loginSchema = z.object({
   email: z.string().email("Invalid email").toLowerCase().trim(),
   password: z.string()
@@ -28,14 +29,12 @@ export const LoginPage: React.FC = () => {
   const onSubmit = async (data: LoginInput) => {
     try {
       const res = await login(data).unwrap();
-
-      toast.success("Login Successful");
-      const role = res.user!.role;
-      if (role === "buyer") navigate("/");
-      else if (role === "vendor") navigate("/vendor");
-      else if (role === "admin") navigate("/admin");
+      riftToast.success("Login Successful");
+      console.log(res);
+      const home = { admin: '/admin', vendor: '/vendor', buyer: '/' };
+      navigate(home[(res as any)?.data?.role as keyof typeof home] ?? '/', { replace: true });
     } catch {
-      toast.error("Login Failed");
+      riftToast.error("Login Failed");
     }
   };
   return (

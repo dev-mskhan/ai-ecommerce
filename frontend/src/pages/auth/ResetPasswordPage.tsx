@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useAuth } from '@/store/hooks/useAuth';
 import toast from 'react-hot-toast';
 import { Text } from '@/components/ui/Typography';
+import { riftToast } from '@/components/common/toastContainer';
 export const ResetPasswordPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +29,7 @@ export const ResetPasswordPage: React.FC = () => {
         navigate('/login');
       }, 2000);
     } catch (error) {
-      toast.error("Failed to reset password");
+      riftToast.error("Failed to reset password");
       navigate('/forgot-password');
     }
   };

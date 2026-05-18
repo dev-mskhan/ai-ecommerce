@@ -14,7 +14,7 @@ export const vendorApi = createApi({
         "VendorReviews",
     ],
     endpoints: (builder) => ({
-        upgradeToVendor: builder.mutation<any, FormData>({
+        upgradeToVendor: builder.mutation<any, any>({
             query: (body) => ({ url: "/vendors/upgrade", method: "POST", body }),
         }),
 
@@ -23,7 +23,7 @@ export const vendorApi = createApi({
             providesTags: ["VendorProfile"],
         }),
 
-        updateVendor: builder.mutation<any, FormData>({
+        updateVendor: builder.mutation<any, any>({
             query: (body) => ({ url: "/vendors/update", method: "PATCH", body }),
             invalidatesTags: ["VendorProfile"],
         }),
