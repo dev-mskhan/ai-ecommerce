@@ -26,6 +26,7 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
+RUN npm run swagger-prod:build
 
 # Don't run as root
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
