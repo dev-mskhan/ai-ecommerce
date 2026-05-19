@@ -16,18 +16,11 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "ignoreDeprecations": "6.0",
-<<<<<<< Updated upstream
-=======
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
->>>>>>> Stashed changes
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
