@@ -1,0 +1,252 @@
+openapi: 3.0.0
+
+info:
+  title: Multi-Vendor E-Commerce API
+  version: 1.0.0
+  description: |
+    ## Authentication
+    This API uses HTTP-only signed cookies for auth — not Authorization headers.
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Auth
+  - name: Products
+  - name: Products - Vendor
+  - name: Products - Admin
+  - name: Categories
+  - name: Chat
+  - name: Chat - Support
+  - name: Orders
+  - name: Orders - Vendor
+  - name: Orders - Admin
+  - name: Vendor
+  - name: Vendor - Analytics
+  - name: Vendor - Reviews
+  - name: Coupons
+  - name: Reviews
+  - name: User
+  - name: Admin
+  - name: Notifications
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+
+paths:
+  # 1. Auth
+  /auth/signup:
+    $ref: ./paths/auth.yaml#/signup
+  /auth/login:
+    $ref: ./paths/auth.yaml#/login
+  /auth/verify-email/{token}:
+    $ref: ./paths/auth.yaml#/verify-email~1{token}
+  /auth/logout:
+    $ref: ./paths/auth.yaml#/logout
+  /auth/refresh-access-token:
+    $ref: ./paths/auth.yaml#/refresh-access-token
+  /auth/forgot-password:
+    $ref: ./paths/auth.yaml#/forgot-password
+  /auth/reset-password/{token}:
+    $ref: ./paths/auth.yaml#/reset-password~1{token}
+
+  # 2. Products (Public)
+  /products:
+    $ref: ./paths/product.yaml#/get-products
+  /products/{id}:
+    $ref: ./paths/product.yaml#/get-product-by-id
+  /products/slug/{slug}:
+    $ref: ./paths/product.yaml#/get-product-by-slug
+
+  # 3. Products - Vendor
+  /products/vendor:
+    post:
+      $ref: ./paths/product.yaml#/create-product/post
+    get:
+      $ref: ./paths/product.yaml#/vendor-products/get
+  /products/vendor/{id}:
+    delete:
+      $ref: ./paths/product.yaml#/delete-product/delete
+    patch:
+      $ref: ./paths/product.yaml#/update-product/patch
+  /products/vendor/{id}/toggle:
+    $ref: ./paths/product.yaml#/toggle-product-status
+  /products/vendor/{id}/stock:
+    $ref: ./paths/product.yaml#/update-stock
+
+  # 4. Products - Admin
+  /products/admin/{id}:
+    $ref: ./paths/product.yaml#/admin-delete-product
+  /products/admin/{id}/feature:
+    $ref: ./paths/product.yaml#/toggle-featured-product
+
+  # 5. Categories
+  /categories:
+    get:
+      $ref: ./paths/category.yaml#/get-categories/get
+    post:
+      $ref: ./paths/category.yaml#/create-category/post
+  /categories/{id}:
+    get:
+      $ref: ./paths/category.yaml#/get-category-by-id/get
+    patch:
+      $ref: ./paths/category.yaml#/update-category/patch
+    delete:
+      $ref: ./paths/category.yaml#/delete-category/delete
+  /categories/{id}/toggle:
+    $ref: ./paths/category.yaml#/toggle-category-status
+  /categories/slug/{slug}:
+    $ref: ./paths/category.yaml#/get-category-by-slug
+  
+  # 6. Chat
+  /chats/send:
+    $ref: ./paths/chat.yaml#/send-message
+  /chats:
+    $ref: ./paths/chat.yaml#/get-user-chats
+  /chats/{chatId}:
+    get:
+      $ref: ./paths/chat.yaml#/get-chat-history/get
+    delete:
+      $ref: ./paths/chat.yaml#/delete-chat/delete
+
+  # 7. Chat - Support
+  /chats/support:
+    post:
+      $ref: ./paths/chat.yaml#/create-support-chat/post
+    get:
+      $ref: ./paths/chat.yaml#/get-my-support/get
+  /chats/support/all:
+    $ref: ./paths/chat.yaml#/get-all-support
+  /chats/support/{chatId}:
+    get:
+      $ref: ./paths/chat.yaml#/get-support-chat/get
+    post:
+      $ref: ./paths/chat.yaml#/send-support-message/post
+  /chats/support/{chatId}/close:
+    $ref: ./paths/chat.yaml#/close-support-chat
+
+  # 8. Orders
+  /orders/create:
+    $ref: ./paths/order.yaml#/create-order
+  /orders:
+    $ref: ./paths/order.yaml#/orders
+  /orders/{id}:
+    $ref: ./paths/order.yaml#/order-by-id
+  /orders/customer/{id}/cancel:
+    $ref: ./paths/order.yaml#/cancel-order
+
+  # 9. Orders - Vendor
+  /orders/vendor:
+    $ref: ./paths/order.yaml#/vendor-orders
+  /orders/vendor/{id}/status:
+    $ref: ./paths/order.yaml#/vendor-update-status
+
+  # 10. Orders - Admin
+  /orders/admin:
+    $ref: ./paths/order.yaml#/admin-orders
+  /orders/admin/{id}/status:
+    $ref: ./paths/order.yaml#/admin-update-status
+
+  # 11. Vendor
+  /vendors/upgrade:
+    $ref: ./paths/vendor.yaml#/upgrade-to-vendor
+  /vendors/update:
+    $ref: ./paths/vendor.yaml#/update-vendor
+  /vendors/profile:
+    $ref: ./paths/vendor.yaml#/get-vendor-profile
+
+  # 12. Vendor - Analytics
+  /vendors/analytics/dashboard:
+    $ref: ./paths/vendor.yaml#/analytics-dashboard
+  /vendors/analytics/revenue:
+    $ref: ./paths/vendor.yaml#/analytics-revenue
+  /vendors/analytics/sales:
+    $ref: ./paths/vendor.yaml#/analytics-sales
+  /vendors/analytics/inventory:
+    $ref: ./paths/vendor.yaml#/analytics-inventory
+  /vendors/analytics/top-products:
+    $ref: ./paths/vendor.yaml#/analytics-top-products
+  
+  # 13. Vendor - Reviews
+  /vendors/reviews:
+    $ref: ./paths/vendor.yaml#/vendor-reviews
+  /vendors/reviews/{id}/reply:
+    $ref: ./paths/vendor.yaml#/reply-to-review
+
+  # 14. Coupons
+  /coupons/apply:
+    $ref: ./paths/coupon.yaml#/apply-coupon
+  /coupons/create:
+    $ref: ./paths/coupon.yaml#/create-coupon
+  /coupons/get:
+    $ref: ./paths/coupon.yaml#/get-all-coupons
+  /coupons/toggle/{id}:
+    $ref: ./paths/coupon.yaml#/toggle-coupon
+  /coupons/delete/{id}:
+    $ref: ./paths/coupon.yaml#/delete-coupon
+  /coupons/update/{id}:
+    $ref: ./paths/coupon.yaml#/update-coupon
+
+  # 15. Reviews
+  /reviews/product/{productId}:
+    $ref: ./paths/review.yaml#/get-product-reviews
+  /reviews/user:
+    $ref: ./paths/review.yaml#/get-user-reviews
+  /reviews:
+    $ref: ./paths/review.yaml#/create-review
+  /reviews/{id}:
+    patch:
+      $ref: ./paths/review.yaml#/update-review/patch
+    delete:
+      $ref: ./paths/review.yaml#/delete-review/delete
+  /reviews/{id}/like:
+    $ref: ./paths/review.yaml#/toggle-like
+  /reviews/{id}/reply:
+    $ref: ./paths/review.yaml#/vendor-reply
+  /reviews/{id}/approve:
+    $ref: ./paths/review.yaml#/toggle-approval
+  /reviews/{id}/admin:
+    $ref: ./paths/review.yaml#/admin-delete-review
+
+  # 16. User
+  /users/me:
+    get:
+      $ref: ./paths/user.yaml#/get-current-user/get
+    patch:
+      $ref: ./paths/user.yaml#/update-current-user/patch
+    delete:
+      $ref: ./paths/user.yaml#/delete-account/delete
+
+  # 17. Admin
+  /admin/orders:
+    $ref: ./paths/admin.yaml#/get-all-orders
+  /admin/users:
+    $ref: ./paths/admin.yaml#/get-all-users
+  /admin/vendors:
+    $ref: ./paths/admin.yaml#/get-all-vendors
+  /admin/vendor/approve/{id}:
+    $ref: ./paths/admin.yaml#/approve-vendor
+  /admin/vendor/reject/{id}:
+    $ref: ./paths/admin.yaml#/reject-vendor
+  /admin/vendor/ban/{id}:
+    $ref: ./paths/admin.yaml#/ban-vendor
+  /admin/reported-products:
+    $ref: ./paths/admin.yaml#/reported-products
+  /admin/reported-products/handle/{id}:
+    $ref: ./paths/admin.yaml#/handle-reported-product
+  /admin/dashboard:
+    $ref: ./paths/admin.yaml#/dashboard-stats
+  /admin/user-stats:
+    $ref: ./paths/admin.yaml#/user-stats
+
+  # 18. Notifications
+  /notifications:
+    $ref: ./paths/notification.yaml#/get-notifications
+  /notifications/read-all:
+    $ref: ./paths/notification.yaml#/mark-all-read
+  /notifications/{id}/read:
+    $ref: ./paths/notification.yaml#/mark-one-read

@@ -1,0 +1,352 @@
+get-all-vendors:
+  get:
+    tags: [Admin]
+    summary: Get all vendors (paginated)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 20
+    responses:
+      200:
+        description: Vendors fetched successfully
+
+approve-vendor:
+  patch:
+    tags: [Admin]
+    summary: Approve a vendor
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    responses:
+      200:
+        description: Vendor approved successfully
+      404:
+        description: Vendor not found
+
+reject-vendor:
+  patch:
+    tags: [Admin]
+    summary: Reject a vendor with reason
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason:
+                type: string
+                example: Incomplete store information
+    responses:
+      200:
+        description: Vendor rejected successfully
+      404:
+        description: Vendor not found
+
+ban-vendor:
+  patch:
+    tags: [Admin]
+    summary: Ban or unban a vendor
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [isBanned]
+            properties:
+              isBanned:
+                type: boolean
+                example: true
+    responses:
+      200:
+        description: Vendor banned/unbanned successfully
+      404:
+        description: Vendor not found
+
+reported-products:
+  get:
+    tags: [Admin]
+    summary: Get all reported products
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: Reported products fetched successfully
+
+handle-reported-product:
+  patch:
+    tags: [Admin]
+    summary: Remove or dismiss a reported product
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          example: 664f1b2c9a8e4d001f3c7a11
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [action]
+            properties:
+              action:
+                type: string
+                enum: [remove, dismiss]
+                example: dismiss
+    responses:
+      200:
+        description: Product removed or report dismissed
+      400:
+        description: Invalid action
+      404:
+        description: Product not found
+
+dashboard-stats:
+  get:
+    tags: [Admin]
+    summary: Get revenue and order analytics
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: Dashboard stats fetched successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalRevenue:
+                  type: number
+                  example: 24500.75
+                revenueAnalytics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      totalRevenue:
+                        type: number
+                orderAnalytics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      totalOrders:
+                        type: integer
+
+user-stats:
+  get:
+    tags: [Admin]
+    summary: Get user growth and top vendors
+    security:
+      - cookieAuth: []
+    responses:
+      200:
+        description: User stats fetched successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalUsers:
+                  type: integer
+                  example: 1500
+                totalVendors:
+                  type: integer
+                  example: 120
+                userGrowth:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      _id:
+                        type: object
+                        properties:
+                          month:
+                            type: integer
+                          year:
+                            type: integer
+                      newUsers:
+                        type: integer
+                topVendors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      storeName:
+                        type: string
+                      storeAvatar:
+                        type: string
+                      totalSales:
+                        type: number
+                      orderCount:
+                        type: integer
+                      companyRevenue:
+                        type: number
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+get-all-users:
+  get:
+    tags: [Admin]
+    summary: Get all buyers with pagination (admin only)
+    description: Redis-cached per page/limit. Includes active user count (active = updated in last 30 days).
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Users fetched successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                users:
+                  - _id: "64abc123def456789abc1234"
+                    name: "Shahzaib"
+                    email: "shahzaib@example.com"
+                    role: "buyer"
+                    isVerified: true
+                    isBanned: false
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                    updatedAt: "2025-06-01T00:00:00.000Z"
+                total: 200
+                activeUsers: 45
+                page: 1
+                limit: 20
+                totalPages: 10
+              message: "Users fetched successfully"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+
+get-all-orders:
+  get:
+    tags: [Admin]
+    summary: Get all orders with pagination (admin only)
+    description: Redis-cached per page/limit.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Orders fetched successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                orders:
+                  - _id: "64abc123def456789abc5678"
+                    buyer: "64abc123def456789abc1234"
+                    items:
+                      - product: "64abc123def456789abc9999"
+                        quantity: 2
+                        price: 499.99
+                    totalAmount: 999.98
+                    paymentStatus: "paid"
+                    orderStatus: "delivered"
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                total: 540
+                page: 1
+                limit: 20
+                totalPages: 27
+              message: "Orders fetched successfully"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"

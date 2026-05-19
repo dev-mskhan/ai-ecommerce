@@ -1,0 +1,461 @@
+# ─── AI Chat ──────────────────────────────────────────────────────────────────
+
+send-message:
+  post:
+    tags: [Chat]
+    summary: Send a message to AI chat
+    description: Sends a message and gets an AI response. Auth is optional — guests can chat without logging in.
+    security:
+      - cookieAuth: []
+      - {}
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "What laptops do you have under $1000?"
+              chatId:
+                type: string
+                example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Message sent
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                chatId: "64abc123def456789abc1234"
+                reply: "Here are some laptops under $1000..."
+                products: []
+              message: "Message sent"
+      '400':
+        description: Bad Request
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              message: "Bad Request"
+
+get-user-chats:
+  get:
+    tags: [Chat]
+    summary: Get all AI chats for current user
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Chats fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc1234"
+                  createdAt: "2025-01-01T00:00:00.000Z"
+                  updatedAt: "2025-01-02T00:00:00.000Z"
+                  messages: []
+              message: "Chats fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+
+get-chat-history:
+  get:
+    tags: [Chat]
+    summary: Get a specific AI chat with full message history
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Chat fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                messages:
+                  - role: "user"
+                    content: "Show me laptops"
+                    products: []
+                  - role: "assistant"
+                    content: "Here are some options..."
+                    products: []
+              message: "Chat fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+delete-chat:
+  delete:
+    tags: [Chat]
+    summary: Delete an AI chat
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Chat deleted
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Chat deleted"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+
+# ─── Support Chat ─────────────────────────────────────────────────────────────
+
+create-support-chat:
+  post:
+    tags: [Chat - Support]
+    summary: Create a new support ticket
+    description: Creates a new support chat and notifies all admins via notification socket.
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "I need help with my order #12345"
+    responses:
+      '201':
+        description: Support ticket created
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data:
+                _id: "64abc123def456789abc5678"
+                user: "64abc123def456789abc1234"
+                type: "support"
+                status: "open"
+                messages:
+                  - role: "user"
+                    content: "I need help with my order #12345"
+                assignedAdmin: null
+                createdAt: "2025-01-01T00:00:00.000Z"
+              message: "Support ticket created"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+
+send-support-message:
+  post:
+    tags: [Chat - Support]
+    summary: Send a message in a support ticket
+    description: |
+      Both the ticket owner and admins can send messages.
+      - Admin sending auto-assigns themselves to the ticket.
+      - Emits `chat:new_message` to the socket room `chat:{chatId}`.
+      - Sends a notification to the other party.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc5678"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "Your order has been dispatched."
+    responses:
+      '200':
+        description: Message sent
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc5678"
+                status: "open"
+                messages:
+                  - role: "user"
+                    content: "I need help with my order #12345"
+                  - role: "admin"
+                    content: "Your order has been dispatched."
+              message: "Message sent"
+      '400':
+        description: Ticket is closed
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "This support ticket is closed"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+get-my-support:
+  get:
+    tags: [Chat - Support]
+    summary: Get current user's support chats
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Support chats fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc5678"
+                  status: "open"
+                  assignedAdmin: null
+                  messages:
+                    - role: "user"
+                      content: "I need help with my order"
+                  createdAt: "2025-01-01T00:00:00.000Z"
+                  updatedAt: "2025-01-01T00:00:00.000Z"
+              message: "Support chats fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+
+get-all-support:
+  get:
+    tags: [Chat - Support]
+    summary: Get all support tickets (admin only)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [open, closed]
+        example: "open"
+    responses:
+      '200':
+        description: All support chats fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc5678"
+                  user:
+                    _id: "64abc123def456789abc1234"
+                    name: "Shahzaib"
+                    email: "shahzaib@example.com"
+                  assignedAdmin:
+                    _id: "64abc123def456789abc9999"
+                    name: "Admin"
+                    email: "admin@example.com"
+                  status: "open"
+                  messages: []
+                  createdAt: "2025-01-01T00:00:00.000Z"
+                  updatedAt: "2025-01-01T00:00:00.000Z"
+              message: "All support chats fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+
+get-support-chat:
+  get:
+    tags: [Chat - Support]
+    summary: Get a specific support ticket
+    description: Accessible by the ticket owner or any admin.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc5678"
+    responses:
+      '200':
+        description: Support chat fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc5678"
+                user:
+                  _id: "64abc123def456789abc1234"
+                  name: "Shahzaib"
+                  email: "shahzaib@example.com"
+                assignedAdmin: null
+                status: "open"
+                messages:
+                  - role: "user"
+                    content: "I need help"
+              message: "Support chat fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+close-support-chat:
+  patch:
+    tags: [Chat - Support]
+    summary: Close a support ticket (admin only)
+    description: |
+      Marks the ticket as closed.
+      - Emits `chat:closed` to the socket room `chat:{chatId}`.
+      - Sends a notification to the ticket owner.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: chatId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc5678"
+    responses:
+      '200':
+        description: Support ticket closed
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc5678"
+                status: "closed"
+              message: "Support ticket closed"
+      '400':
+        description: Already closed
+        content:
+          application/json:
+            example:
+              statusCode: 400 
+              data: null
+              message: "Ticket is already closed"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"

@@ -1,0 +1,114 @@
+# ─── Notifications ────────────────────────────────────────────────────────────
+
+get-notifications:
+  get:
+    tags: [Notifications]
+    summary: Get paginated notifications for current user
+    description: Redis-cached for 5 minutes per user/page/limit. Includes unread count.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Notifications fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                notifications:
+                  - _id: "64abc123def456789abc0001"
+                    recipient: "64abc123def456789abc1234"
+                    type: "new_message"
+                    title: "Admin replied to your ticket"
+                    message: "Your order has been dispatched."
+                    isRead: false
+                    data:
+                      chatId: "64abc123def456789abc5678"
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                total: 85
+                unreadCount: 12
+                page: 1
+                totalPages: 5
+              message: "Notifications fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+
+mark-one-read:
+  patch:
+    tags: [Notifications]
+    summary: Mark a single notification as read
+    description: Invalidates the user's notification cache.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    responses:
+      '200':
+        description: Marked as read
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc0001"
+                isRead: true
+              message: "Marked as read"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+mark-all-read:
+  patch:
+    tags: [Notifications]
+    summary: Mark all notifications as read
+    description: Invalidates the user's notification cache and bulk-updates all unread.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: All notifications marked as read
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "All notifications marked as read"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"

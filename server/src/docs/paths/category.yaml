@@ -1,0 +1,225 @@
+get-categories:
+  get:
+    tags: [Categories]
+    summary: Get all categories
+    responses:
+      '200':
+        description: Categories fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123"
+                  name: "Shoes"
+                  slug: "shoes"
+                  images: []
+                  isActive: true
+              message: "Categories fetched"
+
+get-category-by-id:
+  get:
+    tags: [Categories]
+    summary: Get category by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    responses:
+      '200':
+        description: Category fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                name: "Shoes"
+                slug: "shoes"
+                isActive: true
+              message: "Category fetched"
+      '404':
+        description: Category not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Category not found"
+
+get-category-by-slug:
+  get:
+    tags: [Categories]
+    summary: Get category by slug
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "shoes"
+    responses:
+      '200':
+        description: Category fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                name: "Shoes"
+                slug: "shoes"
+                isActive: true
+              message: "Category fetched"
+      '404':
+        description: Category not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Category not found"
+
+create-category:
+  post:
+    tags: [Categories]
+    summary: Create a category (admin)
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [name, images]
+            properties:
+              name:
+                type: string
+                example: "Shoes"
+              description:
+                type: string
+                example: "All kinds of shoes"
+              images:
+                type: array
+                items:
+                  type: string
+                  format: binary
+    responses:
+      '201':
+        description: Category created
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data:
+                _id: "64abc123"
+                name: "Shoes"
+                slug: "shoes"
+              message: "Category created"
+      '400':
+        description: No image provided
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "At least one image is required"
+      '409':
+        description: Category already exists
+        content:
+          application/json:
+            example:
+              statusCode: 409
+              data: null
+              message: "Category already exists"
+
+update-category:
+  patch:
+    tags: [Categories]
+    summary: Update a category (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              images:
+                type: array
+                items:
+                  type: string
+                  format: binary
+    responses:
+      '200':
+        description: Category updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: {}
+              message: "Category updated"
+      '404':
+        description: Category not found
+
+delete-category:
+  delete:
+    tags: [Categories]
+    summary: Delete a category (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Category deleted
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Category deleted"
+      '404':
+        description: Category not found
+
+toggle-category-status:
+  patch:
+    tags: [Categories]
+    summary: Toggle category active/inactive (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Status toggled
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: {}
+              message: "Category activated"
+      '404':
+        description: Category not found

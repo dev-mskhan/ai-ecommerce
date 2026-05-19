@@ -1,0 +1,106 @@
+import express from "express";
+import router from "./routes.js";
+import cookieParser from "cookie-parser";
+import env from "./config/env.js";
+import cors from "cors";
+import errorHandler from "./middleware/errorHandler.middleware.js";
+import ApiError from "./utils/apiError.js";
+import { pinoHttp } from "pino-http";
+import logger from './config/logger.js';
+import swaggerUi from 'swagger-ui-express';
+import type { JsonObject } from 'swagger-ui-express';
+import yaml from 'js-yaml';
+import "./jobs/worker.js";
+import fs from 'fs';
+import { stripeWebhook } from "./controllers/payment.controller.js";
+import { fileURLToPath } from "url";
+import path from "path";
+import compression from "compression";
+import { initSocketServer } from "./sockets/index.socket.js";
+import http from "http";
+import { Server } from "socket.io";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from 'xss-clean';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+export const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+    cors: { origin: env.clientUrl, credentials: true }
+});
+initSocketServer(io);
+app.set("io", io);
+
+app.post(
+    "/api/v1/payments/webhook",
+    express.raw({ type: "application/json" }),
+    stripeWebhook
+);
+
+const swaggerSpec = yaml.load(
+    fs.readFileSync(path.join(__dirname, 'docs/bundle.yaml'), 'utf8')
+) as JsonObject;
+
+app.use(helmet());
+
+app.use(cors({
+    origin: [env.clientUrl, "http://localhost:5174"],
+    credentials: true,
+}));
+
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 min
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { statusCode: 429, message: "Too many requests, please try again later." },
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { statusCode: 429, message: "Too many auth attempts, please try again later." },
+});
+
+app.use("/api/v1", globalLimiter);
+app.use("/api/v1/auth", authLimiter);
+
+app.use(compression({
+    level: 5,
+    threshold: 1024,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+app.use(cookieParser(env.jwtSecret));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use((req, res, next) => {
+    Object.defineProperty(req, 'query', {
+        value: { ...req.query },
+        writable: true,
+        configurable: true,
+        enumerable: true,
+    });
+    next();
+});
+app.use(mongoSanitize());
+app.use(xss());
+app.use(pinoHttp({ logger }));
+
+app.use("/api/v1", router);
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use((req, res, next) => {
+    next(new ApiError(404, "Not Found"));
+});
+app.use(errorHandler);
+
+export default app;

@@ -1,0 +1,243 @@
+apply-coupon:
+  post:
+    tags: [Coupons]
+    summary: Apply a coupon
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [code, orderAmount]
+            properties:
+              code:
+                type: string
+                example: "SAVE20"
+              orderAmount:
+                type: number
+                example: 150
+    responses:
+      '200':
+        description: Coupon applied
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                discount: 30
+                finalAmount: 120
+              message: "Coupon applied"
+      '400':
+        description: Expired, usage limit reached, or min order not met
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Coupon has expired"
+      '404':
+        description: Invalid or inactive coupon
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Invalid or inactive coupon"
+
+create-coupon:
+  post:
+    tags: [Coupons]
+    summary: Create a coupon (admin)
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [code, discountType, discountValue]
+            properties:
+              code:
+                type: string
+                example: "SAVE20"
+              discountType:
+                type: string
+                enum: [percentage, fixed]
+                example: "percentage"
+              discountValue:
+                type: number
+                example: 20
+              minOrderAmount:
+                type: number
+                example: 100
+              maxDiscountAmount:
+                type: number
+                example: 50
+              usageLimit:
+                type: number
+                example: 100
+              expiresAt:
+                type: string
+                format: date-time
+                example: "2025-12-31T23:59:59.000Z"
+              applicableVendors:
+                type: array
+                items:
+                  type: string
+              applicableCategories:
+                type: array
+                items:
+                  type: string
+    responses:
+      '201':
+        description: Coupon created
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data:
+                _id: "64abc123"
+                code: "SAVE20"
+                discountType: "percentage"
+                discountValue: 20
+                isActive: true
+              message: "Coupon created"
+
+get-all-coupons:
+  get:
+    tags: [Coupons]
+    summary: Get all coupons (admin)
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Coupons fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123"
+                  code: "SAVE20"
+                  discountType: "percentage"
+                  discountValue: 20
+                  isActive: true
+              message: "Coupons fetched"
+
+toggle-coupon:
+  post:
+    tags: [Coupons]
+    summary: Toggle coupon active/inactive (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Status toggled
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                code: "SAVE20"
+                isActive: false
+              message: "Coupon deactivated"
+      '404':
+        description: Coupon not found
+
+delete-coupon:
+  delete:
+    tags: [Coupons]
+    summary: Delete a coupon (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Coupon deleted
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Coupon deleted"
+      '404':
+        description: Coupon not found
+update-coupon:
+  post:
+    tags: [Coupons]
+    summary: Update a coupon (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "SAVE20"
+              discountType:
+                type: string
+                enum: ["percentage", "fixed"]
+                example: "percentage"
+              discountValue:
+                type: number
+                example: 20
+              minOrderAmount:
+                type: number
+                example: 100
+              maxDiscountAmount:
+                type: number
+                example: 50
+              usageLimit:
+                type: number
+                example: 100
+              expiresAt:
+                type: string
+                format: date-time
+                example: "2025-12-31T23:59:59.000Z"
+              applicableVendors:
+                type: array
+                items:
+                  type: string
+              applicableCategories:
+                type: array
+                items:
+                  type: string
+    responses:
+      '200':
+        description: Coupon updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                code: "SAVE20"
+                discountType: "percentage"
+                discountValue: 20
+                isActive: true
+              message: "Coupon updated"
+      '404':
+        description: Coupon not found

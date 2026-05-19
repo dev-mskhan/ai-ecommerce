@@ -1,0 +1,67 @@
+services:
+  api-dev:
+    build:
+      context: .
+      target: development
+    depends_on:
+      redis:
+        condition: service_healthy   
+    ports:
+      - "${PORT:-3000}:3000"
+      - "${DEBUG_PORT:-9229}:9229"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      REDIS_URL: redis://redis:6379
+    develop:
+      watch:
+        - path: ./src
+          action: sync+restart
+          target: /app/src
+    restart: unless-stopped
+    networks:
+      - api-network
+
+  api-prod:
+    build:
+      context: .
+      target: production
+    depends_on:
+      redis:
+        condition: service_healthy   
+    ports:
+      - "${PROD_PORT:-8080}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    restart: always
+    networks:
+      - api-network
+
+  redis:
+    image: redis:7.2-alpine          
+    container_name: redis-cache
+    restart: always
+    expose:
+      - "6379"                       
+    volumes:
+      - redis-data:/data
+    healthcheck:   
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - api-network
+
+volumes:
+  redis-data:
+
+networks:
+  api-network:
+    name: api-network
+    driver: bridge

@@ -1,0 +1,315 @@
+create-order:
+  post:
+    tags: [Orders]
+    summary: Place a new order
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [items, shippingAddress, paymentMethod]
+            properties:
+              items:
+                type: array
+                items:
+                  type: object
+                  required: [product, quantity]
+                  properties:
+                    product:
+                      type: string
+                      example: 664f1b2c9a8e4d001f3c7a11
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      example: 2
+                    selectedVariants:
+                      type: object
+                      additionalProperties:
+                        type: string
+                      example: { size: "42", color: "Black" }
+              shippingAddress:
+                type: object
+                required: [fullName, phone, addressLine1, city, state, postalCode, country]
+                properties:
+                  fullName:
+                    type: string
+                    example: Ahmed Raza
+                  phone:
+                    type: string
+                    example: "03001234567"
+                  addressLine1:
+                    type: string
+                    example: House 12, Block B
+                  addressLine2:
+                    type: string
+                    example: Near City Hospital
+                  city:
+                    type: string
+                    example: Karachi
+                  state:
+                    type: string
+                    example: Sindh
+                  postalCode:
+                    type: string
+                    example: "75500"
+                  country:
+                    type: string
+                    example: Pakistan
+              couponCode:
+                type: string
+                example: SAVE20
+              paymentMethod:
+                type: string
+                enum: [stripe, cod]
+                example: stripe
+    responses:
+      201:
+        description: Order placed successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientSecret:
+                  type: string
+                  description: Stripe client secret (only for stripe payments)
+                  example: pi_3OqX2t_secret_xyz
+      400:
+        description: Invalid product, insufficient stock, or coupon error
+      422:
+        description: Validation error
+
+orders:
+  get:
+    tags: [Orders]
+    summary: Get my orders
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          default: createdAt
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      200:
+        description: Orders fetched
+
+order-by-id:
+  get:
+    tags: [Orders]
+    summary: Get order by ID (buyer, vendor, or admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Order fetched
+      403:
+        description: Forbidden
+      404:
+        description: Order not found
+
+cancel-order:
+  patch:
+    tags: [Orders]
+    summary: Cancel an order (buyer)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason:
+                type: string
+                example: Changed my mind
+    responses:
+      200:
+        description: Order cancelled
+      400:
+        description: Cannot cancel order in current status
+      403:
+        description: Forbidden
+      404:
+        description: Order not found
+
+vendor-orders:
+  get:
+    tags: [Orders - Vendor]
+    summary: Get vendor's orders (only their items)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          default: createdAt
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      200:
+        description: Vendor orders fetched
+
+vendor-update-status:
+  patch:
+    tags: [Orders - Vendor]
+    summary: Update item status for vendor's items
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [confirmed, processing, shipped]
+                example: processing
+              note:
+                type: string
+                example: Packed and ready
+    responses:
+      200:
+        description: Order status updated
+      403:
+        description: Forbidden
+      404:
+        description: Order not found
+
+admin-orders:
+  get:
+    tags: [Orders - Admin]
+    summary: Get all orders (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          default: createdAt
+      - in: query
+        name: order
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      200:
+        description: All orders fetched
+
+admin-update-status:
+  patch:
+    tags: [Orders - Admin]
+    summary: Update order status (admin)
+    security:
+      - cookieAuth: []
+    parameters:
+      - in: path
+        name: orderId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [cancelled, delivered, refunded]
+                example: delivered
+              reason:
+                type: string
+                example: Delivered to customer
+    responses:
+      200:
+        description: Order status updated
+      400:
+        description: Order already in this status
+      404:
+        description: Order not found
