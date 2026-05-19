@@ -2,6 +2,16 @@
 
 A production-grade full stack multi-vendor e-commerce platform built with MERN stack architecture, AI-powered product search, real-time communication, analytics dashboards, and scalable backend infrastructure.
 
+---
+
+## 🚀 Live Deployment
+
+- **Frontend**: https://ai-ecommerce-six.vercel.app
+- **Backend API**: https://ai-ecommerce-kbv2.onrender.com
+- **API Documentation (Swagger)**: https://ai-ecommerce-kbv2.onrender.com/api/v1/docs
+
+---
+
 ## Features
 
 ### Authentication & Authorization
@@ -120,6 +130,7 @@ A production-grade full stack multi-vendor e-commerce platform built with MERN s
 - Docker
 - Docker Compose
 - Render Deployment
+- Vercel Deployment
 
 ---
 
@@ -127,6 +138,7 @@ A production-grade full stack multi-vendor e-commerce platform built with MERN s
 
 ## Backend Structure
 
+```
 server/
 │
 ├── src/
@@ -150,9 +162,11 @@ server/
 ├── compose.yaml
 ├── package.json
 └── tsconfig.json
+```
 
 ## Frontend Structure
 
+```
 client/
 │
 ├── src/
@@ -174,6 +188,7 @@ client/
 ├── vite.config.ts
 ├── package.json
 └── tsconfig.json
+```
 
 ---
 
@@ -190,9 +205,16 @@ client/
 
 # API Documentation
 
-Swagger documentation is available after running backend server.
+Complete Swagger documentation is available at:
 
-http://localhost:PORT/api/v1/docs
+**[https://ai-ecommerce-kbv2.onrender.com/api/v1/docs](https://ai-ecommerce-kbv2.onrender.com/api/v1/docs)**
+
+The API documentation includes:
+- All available endpoints
+- Request/response schemas
+- Authentication details
+- Parameter documentation
+- Real-world examples
 
 ---
 
@@ -200,53 +222,75 @@ http://localhost:PORT/api/v1/docs
 
 ## Clone Repository
 
-## git clone <repository-url>
+```bash
+git clone <repository-url>
+cd ai-ecommerce
+```
 
-# Backend Setup
+## Backend Setup
 
+```bash
 cd server
 npm install
+```
 
-## Run Development Server
+### Run Development Server
 
+```bash
 npm run dev
+```
 
-## Build Backend
+### Build Backend
 
+```bash
 npm run build
+```
 
-## Start Production Server
+### Start Production Server
 
-## npm start
+```bash
+npm start
+```
 
-# Frontend Setup
+## Frontend Setup
 
+```bash
 cd client
 npm install
+```
 
-## Run Frontend
+### Run Frontend
 
+```bash
 npm run dev
+```
 
-## Build Frontend
+### Build Frontend
 
+```bash
 npm run build
+```
 
-# Docker Setup
+## Docker Setup
 
-## Run Entire Application
+### Run Entire Application
 
+```bash
 docker compose up --build api-dev
 docker compose up --build api-prod
+```
 
-## Stop Containers
+### Stop Containers
 
-## docker compose down
+```bash
+docker compose down
+```
+
+---
 
 # Environment Variables
 
-Environment setup guide is available in:
-ENVIRONMENT_SETUP.md
+Environment setup guide is available in: **ENVIRONMENT_SETUP.md**
 
 ---
 
@@ -266,36 +310,35 @@ Redis is used for:
 
 Users can search products using natural language queries like:
 
-text
+```
 Show me gaming laptops under 200k with RTX graphics
+```
 
-text
+```
 Find wireless headphones with noise cancellation
+```
 
-text
+```
 Show me affordable office chairs for long sitting
+```
 
 ---
 
 # Deployment
 
-## Suggested Deployment Platforms
+## Current Deployment Platforms
 
 ### Frontend
-
-- Vercel
+- **Vercel** - https://ai-ecommerce-six.vercel.app
 
 ### Backend
-
-- Render
+- **Render** - https://ai-ecommerce-kbv2.onrender.com
 
 ### Database
-
-- MongoDB Atlas
+- **MongoDB Atlas**
 
 ### Redis
-
-- Redis Cloud
+- **Redis Cloud**
 
 ---
 
