@@ -12,7 +12,7 @@ info:
     - **Secure Token Storage**: Access and refresh tokens are stored in signed HTTP-only cookies
     - **Token Rotation**: Refresh tokens are rotated on each refresh for enhanced security
     - **Email Verification**: Users must verify their email before login
-    - **Role-Based Access Control**: Three roles — `customer`, `vendor`, `admin`
+    - **Role-Based Access Control**: Three roles — `buyer`, `vendor`, `admin`
 
     ### Complete Authentication Flow:
 
