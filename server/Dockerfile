@@ -10,25 +10,25 @@ COPY . .
 RUN npm run swagger:build
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
-# Builder
+
+# BUILDER
 FROM base AS builder
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+RUN cp -r src/docs dist/docs
+RUN npm run swagger-prod:build
 
-#  PRODUCTION 
+# PRODUCTION
 FROM node:${NODE_VERSION}-alpine AS production
 WORKDIR /app
 
-# Copy which needed
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
-RUN npm run swagger-prod:build
 
-# Don't run as root
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
