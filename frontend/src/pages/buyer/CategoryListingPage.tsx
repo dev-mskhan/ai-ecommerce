@@ -2,9 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom'
 import { useCategories } from '@/store/hooks/useCategory';
 import { CategoryCard } from '@/components/buyer/CategoryCard';
+import { PageSkeleton } from '@/components/common/PageSkeleton';
 
 export const CategoryListingPage: React.FC = () => {
-  const { data, isSuccess } = useCategories();
+  const { data, isSuccess, isLoading, error } = useCategories();
   const categories = data?.data;
   return (
     <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-12 lg:py-15">
@@ -18,6 +19,7 @@ export const CategoryListingPage: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10">
+        {(isLoading || error) && <PageSkeleton />}
         {isSuccess && categories.map((cat) => {
           return <CategoryCard key={cat._id} category={cat} />
         })}

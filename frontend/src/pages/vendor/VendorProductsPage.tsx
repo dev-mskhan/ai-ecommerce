@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, Eye, Loader2, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatPrice, cn } from '@/utils/helpers';
@@ -8,11 +7,17 @@ import {
   useDeleteProductMutation,
   useToggleProductStatusMutation,
 } from '@/store/api/productApi';
+import AddProductModal from '@/components/vendor/AddProduct';
+import { riftToast } from '@/components/common/toastContainer';
+import { Link } from 'react-router-dom';
 
 export const VendorProductsPage: React.FC = () => {
   const [search, setSearch] = React.useState('');
+  const [showAddProduct, setShowAddProduct] = React.useState(false);
+  const [editProduct, setEditProduct] = React.useState<any | null>(null);
+
   const { data, isLoading, isError } = useGetVendorProductsQuery();
-  const [deleteProduct, { isLoading: deleting }] = useDeleteProductMutation();
+  const [deleteProduct] = useDeleteProductMutation();
   const [toggleStatus] = useToggleProductStatusMutation();
 
   const products = (data?.data?.products ?? []).filter((p: any) =>
@@ -21,11 +26,19 @@ export const VendorProductsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this product?')) return;
-    await deleteProduct(id);
+    await riftToast.promise(deleteProduct(id).unwrap(), {
+      loading: 'Deleting product...',
+      success: 'Product deleted!',
+      error: 'Failed to delete product',
+    });
   };
 
   const handleToggle = async (id: string) => {
-    await toggleStatus(id);
+    await riftToast.promise(toggleStatus(id).unwrap(), {
+      loading: 'Updating status...',
+      success: 'Status updated!',
+      error: 'Failed to update status',
+    });
   };
 
   return (
@@ -49,14 +62,21 @@ export const VendorProductsPage: React.FC = () => {
               className="pl-10 pr-5 py-3 bg-[#1A1A1A]/5 border-none text-[10px] font-bold uppercase tracking-widest outline-none w-52"
             />
           </div>
-          <Link to="/vendor/products/add">
-            <Button className="flex items-center gap-2">
-              <Plus size={14} />
-              Add New
-            </Button>
-          </Link>
+          <Button onClick={() => { setEditProduct(null); setShowAddProduct(true); }} className="flex items-center gap-2">
+            <Plus size={14} />
+            Add New
+          </Button>
         </div>
       </header>
+
+      {(showAddProduct || editProduct) && (
+        <AddProductModal
+          showAddProduct={showAddProduct || !!editProduct}
+          setShowAddProduct={setShowAddProduct}
+          editProduct={editProduct}
+          onClose={() => { setShowAddProduct(false); setEditProduct(null); }}
+        />
+      )}
 
       {isLoading ? (
         <div className="flex justify-center p-16">
@@ -69,7 +89,6 @@ export const VendorProductsPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10 overflow-hidden">
-          {/* Header row */}
           <div className="bg-[#FDFCF8] p-5 lg:p-7 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.3em] opacity-40 border-b border-[#1A1A1A]/5">
             <div className="w-14">Image</div>
             <div className="flex-1 px-6">Name</div>
@@ -90,7 +109,6 @@ export const VendorProductsPage: React.FC = () => {
                 key={product._id}
                 className="bg-[#FDFCF8] p-7 flex items-center justify-between group hover:bg-[#EAE8E2] transition-colors"
               >
-                {/* Image */}
                 <div className="w-14 h-16 bg-[#1A1A1A]/5 grayscale flex items-center justify-center overflow-hidden border border-[#1A1A1A]/5 flex-shrink-0">
                   {product.images?.[0] ? (
                     <img src={product.images[0]} className="w-full h-full object-cover" alt="" />
@@ -99,37 +117,27 @@ export const VendorProductsPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Name */}
                 <div className="flex-1 px-6 space-y-1 min-w-0">
                   <h3 className="text-base font-heading font-medium italic leading-none truncate">{product.name}</h3>
                   <p className="text-[10px] font-mono opacity-20 uppercase truncate">ID: {product._id?.slice(-8)}</p>
                 </div>
 
-                {/* Category */}
                 <div className="w-28 hidden md:block flex-shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-widest opacity-40 italic">
                     {product.category?.name ?? '—'}
                   </span>
                 </div>
 
-                {/* Price */}
                 <div className="w-22 text-right font-mono font-bold text-sm flex-shrink-0">
                   {formatPrice(product.price).replace('Rs. ', '')}
                 </div>
 
-                {/* Stock */}
                 <div className="w-20 text-center flex-shrink-0">
-                  <span
-                    className={cn(
-                      'font-bold tracking-tighter text-base',
-                      (product.stock ?? 0) < 10 ? 'text-red-700' : '',
-                    )}
-                  >
+                  <span className={cn('font-bold tracking-tighter text-base', (product.stock ?? 0) < 10 ? 'text-red-700' : '')}>
                     {product.stock ?? 0}
                   </span>
                 </div>
 
-                {/* Active toggle */}
                 <div className="w-20 flex justify-center flex-shrink-0">
                   <button
                     onClick={() => handleToggle(product._id)}
@@ -140,22 +148,26 @@ export const VendorProductsPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Actions */}
                 <div className="w-44 flex justify-end gap-2 flex-shrink-0">
-                  <Link to={`/vendor/products/edit/${product._id}`}>
-                    <button className="w-10 h-10 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-[#1A1A1A] hover:text-[#FDFCF8] transition-all">
-                      <Edit size={13} />
-                    </button>
+                  {/* Edit — opens modal */}
+                  <button
+                    onClick={() => setEditProduct(product)}
+                    className="w-10 h-10 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-[#1A1A1A] hover:text-[#FDFCF8] transition-all"
+                  >
+                    <Edit size={13} />
+                  </button>
+
+
+                  <Link to={`/product/${product.slug}`} target="_blank"
+                    rel="noreferrer"
+                    className="w-10 h-10 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 transition-all">
+                    <Eye size={13} />
+
                   </Link>
-                  <Link to={`/products/slug/${product.slug}`} target="_blank">
-                    <button className="w-10 h-10 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 transition-all">
-                      <Eye size={13} />
-                    </button>
-                  </Link>
+
                   <button
                     onClick={() => handleDelete(product._id)}
-                    disabled={deleting}
-                    className="w-10 h-10 border border-red-600/10 text-red-600 flex items-center justify-center opacity-30 hover:opacity-100 transition-all disabled:opacity-20"
+                    className="w-10 h-10 border border-red-600/10 text-red-600 flex items-center justify-center opacity-30 hover:opacity-100 transition-all"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -164,14 +176,16 @@ export const VendorProductsPage: React.FC = () => {
             ))
           )}
         </div>
-      )}
+      )
+      }
 
-      {/* Pagination hint */}
-      {data?.data?.totalPages > 1 && (
-        <p className="text-[9px] font-mono opacity-30 uppercase tracking-widest text-right">
-          Page {data.data.page} of {data.data.totalPages} · {data.data.total} total
-        </p>
-      )}
-    </div>
+      {
+        data?.data?.totalPages > 1 && (
+          <p className="text-[9px] font-mono opacity-30 uppercase tracking-widest text-right">
+            Page {data.data.page} of {data.data.totalPages} · {data.data.total} total
+          </p>
+        )
+      }
+    </div >
   );
 };

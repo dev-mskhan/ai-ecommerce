@@ -23,6 +23,6 @@ router.patch("/vendor/:id/status", authHandler, roleCheck('vendor'), validateReq
 router.patch("/customer/:id/cancel", authHandler, roleCheck('buyer'), validateRequest(cancelOrderSchema, "body", "params"), cancelOrder);
 
 router.get("/vendor", authHandler, roleCheck('vendor', 'admin'), validateRequest(orderQuerySchema, "query"), getVendorOrders);
-router.get("/admin", authHandler, roleCheck('admin'), validateRequest(orderQuerySchema), getAllOrders);
-router.patch('/admin/:id/status', authHandler, validateRequest(updateOrderStatusSchema, "body"), adminUpdateOrderStatus);
+router.get("/admin", authHandler, roleCheck('admin'), validateRequest(orderQuerySchema, "query"), getAllOrders);
+router.patch('/admin/:id/status', authHandler, roleCheck('admin'), validateRequest(updateOrderStatusSchema, "body", "params"), adminUpdateOrderStatus);
 export default router;

@@ -35,9 +35,9 @@ interface IShippingAddress {
 
 export interface IOrder extends Document {
     buyer: mongoose.Types.ObjectId;
-    phone: string;
     items: IOrderItem[];
     shippingAddress: IShippingAddress;
+    phone: string;
     subtotal: number;
     discount: number;
     shippingCost: number;
@@ -72,13 +72,11 @@ const orderItemSchema = new Schema<IOrderItem>(
 
 const shippingAddressSchema = new Schema<IShippingAddress>(
     {
-        fullName: { type: String, required: true },
-        phone: { type: String, required: true },
         addressLine1: { type: String, required: true },
-        addressLine2: String,
+        addressLine2: { type: String },
         city: { type: String, required: true },
         state: { type: String, required: true },
-        postalCode: { type: String, required: true },
+        postalCode: { type: String },
         country: { type: String, required: true },
     },
     { _id: false }

@@ -18,10 +18,7 @@ export const adminRejectVendorSchema = z.object({
 export const adminBanVendorSchema = z.object({
     params: z.object({
         id: z.string().min(1, "Vendor ID is required"),
-    }),
-    body: z.object({
-        isBanned: z.coerce.boolean({ message: "isBanned must be a boolean" }),
-    }),
+    })
 });
 export const adminHandleReportedProductSchema = z.object({
     params: z.object({

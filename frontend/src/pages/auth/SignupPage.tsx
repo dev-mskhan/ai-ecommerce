@@ -32,8 +32,7 @@ export const SignupPage: React.FC = () => {
         navigate('/verify-email')
       }
     } catch (error) {
-      console.log(error);
-      riftToast.error(error.message)
+      riftToast.error("Failed to sign up")
     }
   };
 

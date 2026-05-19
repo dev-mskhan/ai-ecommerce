@@ -7,6 +7,7 @@ import {
     useRejectVendorMutation,
     useBanVendorMutation,
 } from '@store/api/adminApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const AdminPartnersPage: React.FC = () => {
     const [activeTab, setActiveTab] = React.useState('All');
@@ -28,23 +29,30 @@ export const AdminPartnersPage: React.FC = () => {
     });
 
     const handleApprove = async (id: string) => {
-        try { await approveVendor(id).unwrap(); } catch { }
+        await riftToast.promise(approveVendor(id).unwrap(), {
+            loading: 'Approving Vendor...',
+            success: 'Vendor Approved Successfully!',
+            error: 'Failed to approve vendor',
+        })
     };
 
     const handleReject = async () => {
         if (!rejectTarget || !rejectReason.trim()) return;
-        try {
-            await rejectVendor({ id: rejectTarget, reason: rejectReason }).unwrap();
-            setRejectTarget(null);
-            setRejectReason('');
-        } catch { }
+        await riftToast.promise(rejectVendor({ id: rejectTarget, reason: rejectReason }).unwrap(), {
+            loading: 'Rejecting Vendor...',
+            success: 'Vendor Rejected Successfully!',
+            error: 'Failed to reject vendor',
+        })
+        setRejectTarget(null);
+        setRejectReason('');
     };
 
-    const handleBan = async (id: string, currentlyBanned: boolean) => {
-        try {
-            // banVendor sends isBanned toggle — backend uses PATCH with body { isBanned }
-            await banVendor(id).unwrap();
-        } catch { }
+    const handleBan = async (id: string, isBanned: boolean) => {
+        await riftToast.promise(banVendor(id).unwrap(), {
+            loading: isBanned ? 'Banning Vendor...' : 'Unbanning Vendor...',
+            success: isBanned ? 'Vendor Banned Successfully!' : 'Vendor Unbanned Successfully!',
+            error: isBanned ? 'Failed to ban vendor' : 'Failed to unban vendor',
+        });
     };
 
     const getStatus = (v: any) => {

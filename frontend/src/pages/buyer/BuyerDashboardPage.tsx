@@ -52,9 +52,9 @@ export const BuyerDashboardPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-16 xl:gap-24">
         {/* Mobile Menu */}
-        <div className="lg:hidden mb-12">
+        <div className="xl:hidden mb-12">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="w-full flex items-center justify-between px-6 py-4 bg-[#1A1A1A] text-[#FDFCF8] text-[10px] font-bold uppercase tracking-widest shadow-lg">
             <span>{activeTab}</span>
             {isMobileMenuOpen ? <X size={14} /> : <ChevronDown size={14} />}
@@ -72,7 +72,7 @@ export const BuyerDashboardPage: React.FC = () => {
         </div>
 
         {/* Desktop Sidebar */}
-        <nav className="hidden lg:block lg:col-span-3 space-y-12">
+        <nav className="hidden xl:block lg:col-span-2 space-y-12">
           <div className="space-y-6">
             <p className="text-[10px] font-bold text-[#1A1A1A]/40 uppercase tracking-[0.3em]">Menu</p>
             <div className="space-y-4">

@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, ShieldCheck, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/helpers';
 import { useGetReportedProductsQuery, useHandleReportedProductMutation } from '@store/api/adminApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const AdminReportsPage: React.FC = () => {
     const { data, isLoading } = useGetReportedProductsQuery();
@@ -10,13 +11,16 @@ export const AdminReportsPage: React.FC = () => {
     const products: any[] = data?.data ?? [];
 
     const doAction = async (id: string, action: 'remove' | 'dismiss') => {
-        const confirm = action === 'remove'
-            ? window.confirm('Permanently remove this product?')
-            : true;
-        if (!confirm) return;
-        try { await handleReport({ id, action }).unwrap(); } catch { }
+        if (action === 'remove' && !window.confirm('Permanently remove this product?')) return;
+        await riftToast.promise(
+            handleReport({ id, action }).unwrap(),
+            {
+                loading: action === 'remove' ? 'Removing product...' : 'Dismissing report...',
+                success: action === 'remove' ? 'Product removed!' : 'Report dismissed!',
+                error: action === 'remove' ? 'Failed to remove product' : 'Failed to dismiss report',
+            }
+        );
     };
-
     const severityLabel = (reportCount: number) => {
         if (reportCount >= 10) return 'CRITICAL';
         if (reportCount >= 5) return 'HIGH';

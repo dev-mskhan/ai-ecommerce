@@ -7,7 +7,7 @@ export const AIChatHistoryTab = () => {
     const { data: chats, isLoading, isError } = useChats();
     const [selectedChat, setSelectedChat] = useState<any | null>(null);
 
-    if (isLoading) return <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Loading chats...</p>;
+    if (isLoading) return <div className="h-screen flex items-center justify-center"><div className="w-12 h-[2px] bg-[#1A1A1A] animate-pulse"></div></div>;
     if (isError) return <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Failed to load chats.</p>;
 
     if (selectedChat) return (

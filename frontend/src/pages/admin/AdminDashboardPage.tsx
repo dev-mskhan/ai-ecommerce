@@ -7,18 +7,19 @@ import { useGetDashboardStatsQuery, useGetUserStatsQuery, useGetAllVendorsQuery 
 import { useGetAdminOrdersQuery } from '@store/api/orderApi';
 import { formatPrice, cn } from '@/utils/helpers';
 import { Button } from '@/components/ui/Button';
+import { Link } from 'react-router-dom';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const StatCard = ({ title, value, icon: Icon, sub }: any) => (
     <div className="bg-[#FDFCF8] p-8 border border-[#1A1A1A]/5 flex flex-col justify-between h-44 group hover:bg-[#EAE8E2] transition-all">
         <div className="flex justify-between items-start">
-            <div className="opacity-40 group-hover:opacity-100 transition-opacity">
+            <div className="opacity-70 group-hover:opacity-100 transition-opacity">
                 <Icon size={16} strokeWidth={1} />
             </div>
         </div>
         <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-40 mb-3">{title}</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] opacity-70 mb-3">{title}</p>
             <p className="text-3xl font-heading font-black tracking-tighter">{value}</p>
             {sub && <p className="text-[9px] font-mono opacity-30 mt-1 uppercase">{sub}</p>}
         </div>
@@ -58,11 +59,11 @@ export const AdminDashboardPage: React.FC = () => {
                 <div>
                     <div className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#1A1A1A]/40 mb-6">Admin Dashboard</div>
                     <h1 className="text-4xl lg:text-6xl font-heading font-black italic tracking-tighter uppercase leading-none">
-                        Overview <br /> <span className="not-italic font-sans text-xs tracking-[0.5em] font-bold opacity-40">Platform Summary</span>
+                        Overview <br /> <span className="not-italic font-sans text-xs tracking-[0.5em] font-bold opacity-70">Platform Summary</span>
                     </h1>
                 </div>
                 <div className="p-4 border border-[#1A1A1A]/10 bg-[#FDFCF8]">
-                    <p className="text-[9px] font-mono opacity-40 uppercase mb-1">Last Sync</p>
+                    <p className="text-[9px] font-mono opacity-70 uppercase mb-1">Last Sync</p>
                     <p className="text-[10px] font-bold">{new Date().toLocaleTimeString()} // PKT</p>
                 </div>
             </header>
@@ -78,7 +79,7 @@ export const AdminDashboardPage: React.FC = () => {
             {/* Revenue Chart + Pending Approvals */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10">
                 <div className="lg:col-span-8 bg-[#FDFCF8] p-10 h-[420px] flex flex-col">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-10 border-b border-[#1A1A1A]/5 pb-4">Revenue History</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-70 mb-10 border-b border-[#1A1A1A]/5 pb-4">Revenue History</h3>
                     {dashLoading ? (
                         <div className="flex-1 flex items-center justify-center text-[10px] font-mono opacity-30">Loading chart...</div>
                     ) : (
@@ -103,7 +104,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-4 bg-[#1A1A1A] text-[#FDFCF8] p-10 flex flex-col">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-10 border-b border-white/5 pb-4">Pending Approvals</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-70 mb-10 border-b border-white/5 pb-4">Pending Approvals</h3>
                     <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar">
                         {pendingVendors.length === 0 ? (
                             <p className="text-[10px] font-mono opacity-30">No pending approvals</p>
@@ -120,7 +121,9 @@ export const AdminDashboardPage: React.FC = () => {
                         )}
                     </div>
                     <div className="pt-8 border-t border-white/5">
-                        <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white hover:text-black text-[10px]">View All Vendors</Button>
+                        <Link to="/admin/vendors">
+                            <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white hover:text-black text-[10px]">View All Vendors</Button>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -128,7 +131,7 @@ export const AdminDashboardPage: React.FC = () => {
             {/* Top Vendors + Recent Orders */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-6 bg-[#FDFCF8] border border-[#1A1A1A]/10 p-10 h-[400px] flex flex-col">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-10 border-b border-[#1A1A1A]/5 pb-4">Top Vendors by Sales</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-70 mb-10 border-b border-[#1A1A1A]/5 pb-4">Top Vendors by Sales</h3>
                     <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar">
                         {topVendors.length === 0 ? (
                             <p className="text-[10px] font-mono opacity-30">No data yet</p>
@@ -155,7 +158,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-6 bg-[#FDFCF8] border border-[#1A1A1A]/10 p-10 h-[400px] flex flex-col">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 mb-10 border-b border-[#1A1A1A]/5 pb-4">Recent Orders</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-70 mb-10 border-b border-[#1A1A1A]/5 pb-4">Recent Orders</h3>
                     <div className="space-y-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10 overflow-hidden flex-1 overflow-y-auto no-scrollbar">
                         {recentOrders.length === 0 ? (
                             <div className="bg-[#FDFCF8] p-6 text-[10px] font-mono opacity-30">No orders yet</div>

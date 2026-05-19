@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { useUserActions } from '@store/hooks/useUser';
 import { useGetCurrentUserQuery } from '@store/api/userApi';
 import { Link } from 'react-router-dom';
+import { riftToast } from '@/components/common/toastContainer';
+
 type ProfileFormValues = {
     name: string;
     email: string;
@@ -14,28 +16,38 @@ type ProfileFormValues = {
 export const ProfileTab = () => {
     const { data: user, isLoading } = useGetCurrentUserQuery();
     const [update, updateState] = useUserActions().update;
+    console.log(user);
+    const userData = (user as any);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm<ProfileFormValues>({
         values: {
-            name: (user as any)?.name ?? '',
-            email: (user as any)?.email ?? '',
+            name: userData?.data?.name ?? '',
+            email: userData?.data?.email ?? '',
             password: '',
             confirmPassword: '',
         },
     });
 
-    const onSubmit = (data: ProfileFormValues) => {
+    const onSubmit = async (data: ProfileFormValues) => {
         const payload: any = { name: data.name, email: data.email };
         if (data.password) payload.password = data.password;
-        update(payload);
+        await riftToast.promise(update(payload), {
+            loading: 'Updating profile...',
+            success: 'Profile updated successfully!',
+            error: 'Failed to update profile.',
+        });
     };
 
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const formData = new FormData();
         formData.append('avatar', file);
-        update(formData);
+        await riftToast.promise(update(formData), {
+            loading: 'Updating avatar...',
+            success: 'Avatar updated successfully!',
+            error: 'Failed to update avatar.',
+        });
     };
 
     if (isLoading) return <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Loading profile...</p>;
@@ -45,12 +57,12 @@ export const ProfileTab = () => {
             <div className="flex items-baseline justify-between border-b border-[#1A1A1A]/10 pb-4">
                 <h2 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40">Profile Details</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24">
-                <div className="md:col-span-4 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-20">
+                <div className="md:col-span-2 space-y-8">
                     <label className="relative group w-48 h-48 block cursor-pointer">
-                        <div className="w-full h-full bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 flex items-center justify-center grayscale overflow-hidden">
-                            {(user as any)?.avatar ? (
-                                <img src={(user as any)?.avatar} alt="avatar" className="w-full h-full object-cover" />
+                        <div className="w-full h-full bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 flex items-center justify-center overflow-hidden">
+                            {userData?.data?.avatar ? (
+                                <img src={userData?.data?.avatar} alt="avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <User size={64} className="opacity-10" />
                             )}
@@ -59,17 +71,19 @@ export const ProfileTab = () => {
                             <Camera size={20} />
                             <span className="text-[8px] font-bold uppercase tracking-widest">Update Photo</span>
                         </div>
+                        {/* ✅ No defaultValue on file inputs — it's read-only by browser spec anyway */}
                         <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                     </label>
                 </div>
 
-                <div className="md:col-span-8 space-y-12">
+                <div className="md:col-span-12 space-y-12">
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div className="space-y-2">
                                 <label className="text-[9px] font-bold uppercase tracking-widest opacity-40">Full Name</label>
                                 <input
                                     type="text"
+                                    // ✅ No defaultValue — useForm `values` handles pre-filling
                                     {...register('name', { required: 'Name is required' })}
                                     className="w-full bg-[#1A1A1A]/5 p-4 outline-none border-none text-sm font-medium"
                                 />
@@ -79,6 +93,7 @@ export const ProfileTab = () => {
                                 <label className="text-[9px] font-bold uppercase tracking-widest opacity-40">Email Address</label>
                                 <input
                                     type="email"
+                                    // ✅ No defaultValue
                                     {...register('email', { required: 'Email is required' })}
                                     className="w-full bg-[#1A1A1A]/5 p-4 outline-none border-none text-sm font-medium"
                                 />
@@ -111,8 +126,6 @@ export const ProfileTab = () => {
                         <Button type="submit" disabled={updateState.isLoading} className="text-[10px] uppercase font-bold tracking-widest">
                             {updateState.isLoading ? 'Saving...' : 'Save Changes'}
                         </Button>
-                        {updateState.isSuccess && <p className="text-[9px] text-green-600 uppercase tracking-widest">Profile updated.</p>}
-                        {updateState.isError && <p className="text-[9px] text-red-600 uppercase tracking-widest">Update failed.</p>}
                     </form>
 
                     <div className="p-10 bg-[#1A1A1A] text-[#FDFCF8] space-y-6">

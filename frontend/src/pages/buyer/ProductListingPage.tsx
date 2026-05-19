@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { useProducts } from '@store/hooks/useProduct';
 import { useCategories, useCategoryBySlug } from '@store/hooks/useCategory';
 import { ProductFilters } from '@/components/buyer/products/ProductFilters';
 import { ProductGrid } from '@/components/buyer/products/ProductGrid';
 import { ProductListingHeader } from '@/components/buyer/products/ProductListingHeader';
+import { PageSkeleton } from '@/components/common/PageSkeleton';
 
 export const ProductListingPage: React.FC = () => {
   const { category: categorySlug } = useParams(); // e.g. "electronics" or undefined
@@ -23,8 +24,7 @@ export const ProductListingPage: React.FC = () => {
   const selectedRatings = ratingParam ? ratingParam.split(',').map(Number) : [];
 
   const { data: categoryData } = useCategoryBySlug(categorySlug);
-  const categoryId = categoryData?.data?._id;
-  console.log(categoryData);
+  const categoryId = useMemo(() => categoryData?.data?._id, [categoryData]);
 
   const productParams = React.useMemo(() => ({
     ...(categoryId && { categoryId }),
@@ -37,21 +37,21 @@ export const ProductListingPage: React.FC = () => {
     limit,
   }), [categoryId, sortBy, minPrice, maxPrice, ratingParam, searchQuery, currentPage, limit]);
 
-  const { data, isLoading } = useProducts(productParams);
+  const { data, isLoading, isError } = useProducts(productParams);
 
   const { data: categoriesData } = useCategories();
 
-  const rawProducts = data?.data?.products ?? [];
-  const totalCount = data?.data?.total ?? 0;
-  const totalPages = data?.data?.totalPages ?? Math.ceil(totalCount / Number(limit));
+  const rawProducts = useMemo(() => data?.data?.products ?? [], [data]);
+  const totalCount = useMemo(() => data?.data?.total ?? 0, [data]);
+  const totalPages = useMemo(() => data?.data?.totalPages ?? Math.ceil(totalCount / Number(limit)), [data]);
 
   // Calculate discount % and pass enriched products
-  const products = rawProducts.map((p: any) => ({
+  const products = useMemo(() => rawProducts.map((p: any) => ({
     ...p,
     discountPercent: p.discountPrice && p.price > p.discountPrice
       ? Math.round(((p.price - p.discountPrice) / p.price) * 100)
       : null,
-  }));
+  })), [rawProducts]);
 
   const updateFilters = (updates: Record<string, string | number | null>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -93,7 +93,7 @@ export const ProductListingPage: React.FC = () => {
           onReset={handleReset}
         />
         <div className="flex-1">
-          <ProductGrid
+          {(isLoading || isError) ? <PageSkeleton /> : <ProductGrid
             products={products}
             viewMode={viewMode}
             isLoading={isLoading}
@@ -101,7 +101,7 @@ export const ProductListingPage: React.FC = () => {
             totalPages={totalPages}
             onPageChange={(page) => updateFilters({ page })}
             onReset={handleReset}
-          />
+          />}
         </div>
       </div>
     </div>

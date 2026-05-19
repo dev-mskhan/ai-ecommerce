@@ -25,7 +25,13 @@ const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage').t
 const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 
 // Vendor Pages
-
+const VendorDashboardPage = lazy(() => import('@pages/vendor/VendorDashboardPage').then(m => ({ default: m.VendorDashboardPage })));
+const VendorProductsPage = lazy(() => import('@pages/vendor/VendorProductsPage').then(m => ({ default: m.VendorProductsPage })));
+const VendorOrdersPage = lazy(() => import('@pages/vendor/VendorOrdersPage').then(m => ({ default: m.VendorOrdersPage })));
+const VendorSettingsPage = lazy(() => import('@pages/vendor/VendorSettingsPage').then(m => ({ default: m.VendorSettingsPage })));
+const VendorReportsPage = lazy(() => import('@pages/vendor/VendorReportsPage').then(m => ({ default: m.VendorReportsPage })));
+const VendorRevenuePage = lazy(() => import('@pages/vendor/VendorRevenuePage').then(m => ({ default: m.VendorRevenuePage })));
+const VendorInventoryPage = lazy(() => import('@pages/vendor/VendorInventoryPage').then(m => ({ default: m.VendorInventoryPage })));
 
 //Admin Pages 
 const AdminDashboardPage = lazy(() => import('@pages/admin/AdminDashboardPage.tsx').then(m => ({ default: m.AdminDashboardPage })));
@@ -37,12 +43,11 @@ const AdminPartnersPage = lazy(() => import('@pages/admin/AdminPartnersPage').th
 const AdminPersonnelPage = lazy(() => import('@pages/admin/AdminPersonnelPage.tsx').then(m => ({ default: m.AdminPersonnelPage })));
 const AdminReportsPage = lazy(() => import('@pages/admin/AdminReportsPage').then(m => ({ default: m.AdminReportsPage })));
 const AdminCouponsPage = lazy(() => import('@pages/admin/AdminCouponsPage').then(m => ({ default: m.AdminCouponsPage })));
-const AdminSettingsPage = lazy(() => import('@pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 export const router = createBrowserRouter([
     // Auth routes
-    { path: '/login', element: <PublicOnlyRoute><LoginPage /></PublicOnlyRoute> },
-    { path: '/signup', element: <PublicOnlyRoute><SignupPage /></PublicOnlyRoute> },
+    { path: '/login', element: <LoginPage /> },
+    { path: '/signup', element: <SignupPage /> },
     { path: '/verify-email', element: <EmailVerificationPage /> },
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
     { path: '/reset-password', element: <ResetPasswordPage /> },
@@ -60,10 +65,10 @@ export const router = createBrowserRouter([
             { path: 'product/:id', element: <ProductDetailPage /> },
             { path: 'categories', element: <CategoryListingPage /> },
             { path: 'category/:category', element: <ProductListingPage /> },
+            { path: 'cart', element: <CartPage /> },
             {
                 element: <ProtectedRoute />,
                 children: [
-                    { path: 'cart', element: <CartPage /> },
                     { path: 'checkout', element: <CheckoutPage /> },
                     { path: 'payment-success', element: <PaymentSuccessPage /> },
                     { path: 'account', element: <BuyerDashboardPage /> },
@@ -89,7 +94,6 @@ export const router = createBrowserRouter([
                 { path: 'users', element: <AdminPersonnelPage /> },
                 { path: 'reports', element: <AdminReportsPage /> },
                 { path: 'coupons', element: <AdminCouponsPage /> },
-                { path: 'settings', element: <AdminSettingsPage /> },
             ]
         }]
     },
@@ -101,7 +105,13 @@ export const router = createBrowserRouter([
         children: [{
             element: <VendorLayout />,
             children: [
-                // vendor pages...
+                { index: true, element: <VendorDashboardPage /> },
+                { path: 'products', element: <VendorProductsPage /> },
+                { path: 'orders', element: <VendorOrdersPage /> },
+                { path: 'reports', element: <VendorReportsPage /> },
+                { path: 'revenue', element: <VendorRevenuePage /> },
+                { path: 'inventory', element: <VendorInventoryPage /> },
+                { path: 'settings', element: <VendorSettingsPage /> },
             ]
         }]
     },

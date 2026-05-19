@@ -1,9 +1,10 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useCategories } from '@/store/hooks/useCategory';
+import { PageSkeleton } from '@/components/common/PageSkeleton';
 
 export const CategoriesSlider = () => {
-    const { data, isLoading, isSuccess } = useCategories();
+    const { data, isLoading, isSuccess, isError } = useCategories();
     const categories = data?.data;
     return (
         <section className="overflow-hidden">
@@ -13,8 +14,9 @@ export const CategoriesSlider = () => {
                     View All
                 </Link>
             </div>
-            <div className="relative group px-px">
-                <div className="flex gap-px bg-[#1A1A1A]/10 border-x border-[#1A1A1A]/10 overflow-hidden">
+            <div className="relative group px-0">
+                {(isLoading || isError) && <PageSkeleton />}
+                <div className="flex gap-0 bg-[#1A1A1A]/10 border-x border-[#1A1A1A]/10 overflow-hidden">
                     <motion.div className="flex" animate={{ x: [0, -1200] }} transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}>
                         {isSuccess && categories?.map((cat, idx) => {
                             const catImages = cat.images;

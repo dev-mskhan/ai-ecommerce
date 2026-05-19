@@ -1,4 +1,4 @@
-orders:
+create-order:
   post:
     tags: [Orders]
     summary: Place a new order
@@ -82,6 +82,7 @@ orders:
       422:
         description: Validation error
 
+orders:
   get:
     tags: [Orders]
     summary: Get my orders

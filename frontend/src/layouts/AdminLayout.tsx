@@ -1,51 +1,80 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Users,
-  Store,
-  Package,
-  ShoppingCart,
-  BarChart3,
-  Settings,
-  LogOut,
-  Bell,
-  Search,
-  MessageSquare,
-  ShieldAlert,
-  Menu,
-  X,
-  Tag,
+  LayoutDashboard, Users, Store, Package, ShoppingCart, BarChart3,
+  Settings, LogOut, Bell, MessageSquare, ShieldAlert, Menu, X, Tag, CheckCheck,
 } from 'lucide-react';
 import { cn } from '@/utils/helpers';
 import { SupportChat } from '@/components/common/SupportChat';
-import { useAppSelector, useAppDispatch } from '@store/index';
-import { useGetNotificationsQuery } from '@store/api/notificationApi';
+import { useAppSelector } from '@store/index';
+import { useGetNotificationsQuery, useMarkAllReadMutation, useMarkOneReadMutation } from '@store/api/notificationApi';
 import { useGetAllSupportChatsQuery } from '@store/api/supportApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const AdminLayout: React.FC = () => {
   const [isSupportChatOpen, setIsSupportChatOpen] = React.useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isNotifOpen, setIsNotifOpen] = React.useState(false);
+  const [dropdownPos, setDropdownPos] = React.useState({ top: 0, right: 0 });
+
+  const notifRef = React.useRef<HTMLDivElement>(null);
+  const bellBtnRef = React.useRef<HTMLButtonElement>(null);
   const location = useLocation();
 
-  // Pull admin user from auth slice — adjust selector path to match your store shape
   const user = useAppSelector((s: any) => s.auth?.user);
 
-  // Unread notification count
   const { data: notifData } = useGetNotificationsQuery();
-  const unreadCount: number = React.useMemo(() => {
+  const [unreadCount, notifications] = React.useMemo(() => {
     const notifs: any[] = notifData?.data?.notifications ?? [];
-    return notifs?.filter((n: any) => !n.read).length;
+    return [notifs.filter((n: any) => !n.isRead).length, notifs];
   }, [notifData]);
-  console.log("notifData", notifData);
 
-  // Pending support tickets count
+  const [markAllRead] = useMarkAllReadMutation();
+  const [markOneRead] = useMarkOneReadMutation();
+
   const { data: supportData } = useGetAllSupportChatsQuery();
-  console.log("supportData", supportData);
   const openTickets: number = React.useMemo(() => {
     const chats: any[] = supportData?.data ?? [];
     return chats.filter((c: any) => c.status === 'open').length;
   }, [supportData]);
+
+  React.useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        notifRef.current && !notifRef.current.contains(e.target as Node) &&
+        bellBtnRef.current && !bellBtnRef.current.contains(e.target as Node)
+      ) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleNotifToggle = () => {
+    if (!isNotifOpen && bellBtnRef.current) {
+      const rect = bellBtnRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    setIsNotifOpen((o) => !o);
+  };
+
+  const handleMarkOne = async (id: string) => {
+    await riftToast.promise(markOneRead(id).unwrap(), {
+      loading: 'Marking as read...', success: 'Marked as read!', error: 'Failed to mark as read',
+    });
+  };
+
+  const handleMarkAll = async () => {
+    await riftToast.promise(markAllRead().unwrap(), {
+      loading: 'Marking all as read...', success: 'Marked all as read!', error: 'Failed to mark all as read',
+    });
+  };
 
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -57,15 +86,8 @@ export const AdminLayout: React.FC = () => {
     { label: 'Coupons', icon: Tag, path: '/admin/coupons' },
     { label: 'Reports', icon: ShieldAlert, path: '/admin/reports' },
     { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
-    { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
 
-  // Close sidebar on route change
-  React.useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [location.pathname]);
-
-  // Active route check — exact match for /admin, prefix match for sub-routes
   const isActive = (path: string) => {
     if (path === '/admin') return location.pathname === '/admin';
     return location.pathname.startsWith(path);
@@ -73,7 +95,6 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#FDFCF8] text-[#1A1A1A] overflow-hidden">
-      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-[#1A1A1A]/60 backdrop-blur-sm z-40 lg:hidden"
@@ -83,24 +104,19 @@ export const AdminLayout: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 w-72 bg-[#1A1A1A] flex flex-col flex-shrink-0 text-[#FDFCF8] z-50 transition-transform duration-300 transform lg:relative lg:translate-x-0",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        'fixed inset-y-0 left-0 w-72 bg-[#1A1A1A] flex flex-col flex-shrink-0 text-[#FDFCF8] z-50 transition-transform duration-300 transform lg:relative lg:translate-x-0',
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
       )}>
-        {/* Logo */}
         <div className="p-10 border-b border-[#FDFCF8]/10 flex items-center justify-between">
           <Link to="/" className="flex flex-col items-start gap-0 group">
             <span className="font-heading font-black italic text-4xl tracking-tighter">SHOP</span>
             <span className="text-[9px] font-bold tracking-[0.5em] opacity-40 uppercase">Admin Panel</span>
           </Link>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden text-[#FDFCF8]/40 hover:text-[#FDFCF8]"
-          >
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-[#FDFCF8]/40 hover:text-[#FDFCF8]">
             <X size={20} />
           </button>
         </div>
 
-        {/* Nav */}
         <div className="flex-1 px-6 py-10 space-y-1 overflow-y-auto no-scrollbar">
           <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-[0.4em] mb-6">Management</p>
           {menuItems.map((item) => {
@@ -110,10 +126,8 @@ export const AdminLayout: React.FC = () => {
                 key={item.label}
                 to={item.path}
                 className={cn(
-                  "flex items-center justify-between px-4 py-3.5 transition-all group",
-                  active
-                    ? "bg-[#FDFCF8] text-[#1A1A1A] italic font-medium"
-                    : "opacity-40 hover:opacity-100 hover:pl-6"
+                  'flex items-center justify-between px-4 py-3.5 transition-all group',
+                  active ? 'bg-[#FDFCF8] text-[#1A1A1A] italic font-medium' : 'opacity-40 hover:opacity-100 hover:pl-6',
                 )}
               >
                 <div className="flex items-center gap-4">
@@ -126,9 +140,7 @@ export const AdminLayout: React.FC = () => {
           })}
         </div>
 
-        {/* Bottom */}
         <div className="p-8 border-t border-[#FDFCF8]/5 space-y-2">
-          {/* Admin identity */}
           {user && (
             <div className="px-4 py-3 mb-2">
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 truncate">{user.name ?? 'Administrator'}</p>
@@ -139,8 +151,7 @@ export const AdminLayout: React.FC = () => {
             to="/login"
             className="flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:text-red-400 transition-all"
           >
-            <LogOut size={15} />
-            Logout
+            <LogOut size={15} /> Logout
           </Link>
         </div>
       </aside>
@@ -148,7 +159,7 @@ export const AdminLayout: React.FC = () => {
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="h-20 bg-[#FDFCF8]/80 backdrop-blur-md border-b border-[#1A1A1A]/10 flex items-center justify-between px-6 md:px-12 flex-shrink-0">
+        <header className="h-20 bg-[#FDFCF8]/80 backdrop-blur-md border-b border-[#1A1A1A]/10 flex items-center justify-between px-6 md:px-12 flex-shrink-0 relative">
           <div className="flex items-center gap-6">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -156,18 +167,9 @@ export const AdminLayout: React.FC = () => {
             >
               <Menu size={22} />
             </button>
-            <div className="flex-1 max-w-md relative hidden md:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1A1A1A]/30" size={14} />
-              <input
-                type="text"
-                placeholder="Search records..."
-                className="w-full bg-[#1A1A1A]/5 border-none p-3.5 text-[10px] uppercase font-bold tracking-widest outline-none pl-11"
-              />
-            </div>
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Support chat button with badge */}
             <button
               onClick={() => setIsSupportChatOpen(true)}
               className="relative p-2 text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors"
@@ -179,8 +181,10 @@ export const AdminLayout: React.FC = () => {
               )}
             </button>
 
-            {/* Notifications bell with badge */}
+            {/* Bell button — no wrapper div needed */}
             <button
+              ref={bellBtnRef}
+              onClick={handleNotifToggle}
               className="relative p-2 text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors"
               title="Notifications"
             >
@@ -196,7 +200,6 @@ export const AdminLayout: React.FC = () => {
 
             <div className="w-px h-6 bg-[#1A1A1A]/10 hidden sm:block" />
 
-            {/* Admin identity */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-[10px] font-bold uppercase tracking-widest">{user?.name ?? 'Administrator'}</p>
@@ -209,13 +212,69 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
           <div className="max-w-[1200px] mx-auto">
             <Outlet />
           </div>
         </main>
       </div>
+
+      {/* Notification Dropdown — portaled to body */}
+      {isNotifOpen && createPortal(
+        <div
+          ref={notifRef}
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+          className="fixed w-80 bg-[#FDFCF8] border border-[#1A1A1A]/10 shadow-lg z-[9999]"
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#1A1A1A]/5">
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-50">
+              Notifications {unreadCount > 0 && `(${unreadCount})`}
+            </span>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAll}
+                className="text-[9px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 flex items-center gap-1 transition-all"
+              >
+                <CheckCheck size={11} /> All read
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-72 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="text-center text-[9px] font-bold uppercase tracking-widest opacity-20 py-8">
+                No notifications
+              </p>
+            ) : (
+              notifications.slice(0, 8).map((n: any) => (
+                <button
+                  key={n._id}
+                  onClick={() => handleMarkOne(n._id)}
+                  className={cn(
+                    'w-full text-left px-5 py-4 border-b border-[#1A1A1A]/5 hover:bg-[#EAE8E2] bg-[#FDFCF8] transition-colors',
+                    !n.isRead ? 'bg-[#1A1A1A]/[0.02]' : '',
+                  )}
+                  disabled={n.isRead}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0',
+                      !n.isRead ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A]/20',
+                    )} />
+                    <div className="min-w-0">
+                      <p className={cn('text-xs leading-snug truncate', !n.isRead ? 'font-bold' : 'font-medium opacity-60')}>
+                        {n.title}
+                      </p>
+                      <p className="text-[9px] font-mono opacity-30 mt-0.5 truncate">{n.message}</p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
 
       <SupportChat isOpen={isSupportChatOpen} onClose={() => setIsSupportChatOpen(false)} />
     </div>

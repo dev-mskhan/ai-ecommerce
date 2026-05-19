@@ -50,6 +50,39 @@ get-category-by-id:
               data: null
               message: "Category not found"
 
+get-category-by-slug:
+  get:
+    tags: [Categories]
+    summary: Get category by slug
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "shoes"
+    responses:
+      '200':
+        description: Category fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123"
+                name: "Shoes"
+                slug: "shoes"
+                isActive: true
+              message: "Category fetched"
+      '404':
+        description: Category not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Category not found"
+
 create-category:
   post:
     tags: [Categories]

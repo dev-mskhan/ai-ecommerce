@@ -48,11 +48,17 @@ export const rejectVendor = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const banVendor = asyncHandler(async (req: Request, res: Response) => {
-    const { isBanned } = req.body;
-    const user = await User.findOneAndUpdate({ _id: req.params.id, role: "vendor" }, { isBanned }, { new: true });
+    const user = await User.findById(req.params.id);
+    if (!user || user.role !== "vendor") throw new ApiError(404, "Vendor not found");
+
+    const updated = await User.findByIdAndUpdate(
+        req.params.id,
+        { $set: { isBanned: !user.isBanned } },
+        { new: true }
+    );
     if (!user) throw new ApiError(404, "Vendor not found");
     await bustAdminCache("admin:vendors:*", "admin:user-stats");
-    res.json(new ApiResponse(200, user, `Vendor ${isBanned ? "banned" : "unbanned"} successfully`));
+    res.json(new ApiResponse(200, updated, `Vendor ${updated!.isBanned ? "banned" : "unbanned"} successfully`));
 });
 
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {

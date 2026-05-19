@@ -9,6 +9,7 @@ import {
     useDeleteCouponMutation,
     useToggleCouponMutation,
 } from '@store/api/couponApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 const EMPTY_FORM = {
     code: '',
@@ -79,25 +80,34 @@ export const AdminCouponsPage: React.FC = () => {
         if (!form.discountValue || isNaN(Number(form.discountValue))) { setError('Discount value is required.'); return; }
         if (form.discountType === 'percentage' && Number(form.discountValue) > 100) { setError('Percentage cannot exceed 100.'); return; }
 
-        try {
-            if (editTarget) {
-                await updateCoupon({ id: editTarget._id, data: buildPayload() }).unwrap();
-            } else {
-                await createCoupon(buildPayload()).unwrap();
+        await riftToast.promise(
+            editTarget
+                ? updateCoupon({ id: editTarget._id, data: buildPayload() }).unwrap()
+                : createCoupon(buildPayload()).unwrap(),
+            {
+                loading: editTarget ? 'Updating coupon...' : 'Creating coupon...',
+                success: editTarget ? 'Coupon updated!' : 'Coupon created!',
+                error: 'Something went wrong.',
             }
-            setIsModalOpen(false);
-        } catch (err: any) {
-            setError(err?.data?.message ?? 'Something went wrong.');
-        }
+        );
+        setIsModalOpen(false);
     };
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Delete this coupon?')) return;
-        try { await deleteCoupon(id).unwrap(); } catch { }
+        await riftToast.promise(deleteCoupon(id).unwrap(), {
+            loading: 'Deleting coupon...',
+            success: 'Coupon deleted!',
+            error: 'Failed to delete coupon',
+        });
     };
 
     const handleToggle = async (id: string) => {
-        try { await toggleCoupon(id).unwrap(); } catch { }
+        await riftToast.promise(toggleCoupon(id).unwrap(), {
+            loading: 'Updating status...',
+            success: 'Status updated!',
+            error: 'Failed to update status',
+        });
     };
 
     return (
@@ -198,7 +208,7 @@ export const AdminCouponsPage: React.FC = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[#FDFCF8]/90 backdrop-blur-sm overflow-y-auto">
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-[#FDFCF8]/90 backdrop-blur-sm overflow-y-auto">
                     <div className="bg-[#FDFCF8] border border-[#1A1A1A] w-full max-w-2xl p-12 space-y-10 relative my-8">
                         <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 opacity-40 hover:opacity-100">
                             <XCircle size={24} strokeWidth={1} />

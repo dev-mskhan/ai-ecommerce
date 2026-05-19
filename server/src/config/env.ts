@@ -37,7 +37,7 @@ const env = {
   geminiApiKey: requiredEnv("GEMINI_API_KEY"),
   // stripe
   stripeSecretKey: requiredEnv("STRIPE_SECRET_KEY"),
-  stripeWebhookSecret: requiredEnv("STRIPE_WEBHOOK_SECRET"),
+  stripeWebhookSecret: requiredEnv("STRIPE_WEBHOOK_SECRET")
 };
 
 export default env;

@@ -1,0 +1,514 @@
+# ─── Public ───────────────────────────────────────────────────────────────────
+
+get-product-reviews:
+  get:
+    tags: [Reviews]
+    summary: Get approved reviews for a product
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+      - name: rating
+        in: query
+        schema:
+          type: integer
+          enum: [1, 2, 3, 4, 5]
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+          enum: [createdAt, rating, likes]
+          default: createdAt
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum: [asc, desc]
+          default: desc
+    responses:
+      '200':
+        description: Reviews fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                reviews:
+                  - _id: "64abc123def456789abc0001"
+                    buyer:
+                      _id: "64abc123def456789abc1234"
+                      name: "Shahzaib"
+                      avatar: "https://res.cloudinary.com/..."
+                    rating: 5
+                    title: "Great product"
+                    comment: "Really happy with this purchase."
+                    isVerifiedPurchase: true
+                    likes: []
+                    dislikes: []
+                    vendorReply: null
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                total: 42
+                page: 1
+                totalPages: 5
+              message: "Reviews fetched"
+
+# ─── Buyer ────────────────────────────────────────────────────────────────────
+
+get-user-reviews:
+  get:
+    tags: [Reviews]
+    summary: Get current buyer's reviews
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Reviews fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc0001"
+                  product:
+                    _id: "64abc123def456789abc1234"
+                    name: "Laptop Pro X"
+                    images: ["https://res.cloudinary.com/..."]
+                  rating: 4
+                  title: "Good laptop"
+                  comment: "Works well overall."
+                  createdAt: "2025-01-01T00:00:00.000Z"
+              message: "Reviews fetched"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+
+create-review:
+  post:
+    tags: [Reviews]
+    summary: Create a review (buyer only)
+    description: |
+      Only buyers who have **paid** for the product can review it.
+      One review per product per buyer.
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [product, order, rating]
+            properties:
+              product:
+                type: string
+                example: "64abc123def456789abc1234"
+              order:
+                type: string
+                example: "64abc123def456789abc5678"
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+                example: 5
+              title:
+                type: string
+                example: "Great product"
+              comment:
+                type: string
+                example: "Really happy with this purchase."
+    responses:
+      '201':
+        description: Review submitted
+        content:
+          application/json:
+            example:
+              statusCode: 201
+              data:
+                _id: "64abc123def456789abc0001"
+                product: "64abc123def456789abc1234"
+                buyer: "64abc123def456789abc9999"
+                order: "64abc123def456789abc5678"
+                rating: 5
+                title: "Great product"
+                comment: "Really happy with this purchase."
+                isVerifiedPurchase: true
+                isApproved: false
+              message: "Review submitted"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Not a verified purchase
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              data: null
+              message: "You can only review products you have purchased"
+      '409':
+        description: Already reviewed
+        content:
+          application/json:
+            example:
+              statusCode: 409
+              data: null
+              message: "You have already reviewed this product"
+
+update-review:
+  patch:
+    tags: [Reviews]
+    summary: Update own review (buyer only)
+    description: Updating a review resets its approval status.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+              title:
+                type: string
+              comment:
+                type: string
+    responses:
+      '200':
+        description: Review updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc0001"
+                rating: 4
+                title: "Updated title"
+                comment: "Changed my mind slightly."
+                isApproved: false
+              message: "Review updated"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+delete-review:
+  delete:
+    tags: [Reviews]
+    summary: Delete own review (buyer only)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    responses:
+      '200':
+        description: Review deleted
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Review deleted"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+toggle-like:
+  post:
+    tags: [Reviews]
+    summary: Like or dislike a review (buyer only)
+    description: Toggling — calling again removes the like/dislike.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [type]
+            properties:
+              type:
+                type: string
+                enum: [like, dislike]
+    responses:
+      '200':
+        description: Like/dislike toggled
+        content:
+          application/json:
+            examples:
+              liked:
+                value:
+                  statusCode: 200
+                  data:
+                    likes: 14
+                  message: "Review liked"
+              unliked:
+                value:
+                  statusCode: 200
+                  data:
+                    likes: 13
+                  message: "Like removed"
+              disliked:
+                value:
+                  statusCode: 200
+                  data:
+                    dislikes: 3
+                  message: "Review disliked"
+      '400':
+        description: Invalid type
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "Invalid like type"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+# ─── Vendor ───────────────────────────────────────────────────────────────────
+
+vendor-reply:
+  post:
+    tags: [Reviews]
+    summary: Reply to a review (vendor only)
+    description: Only the vendor who owns the reviewed product can reply.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "Thank you for your feedback! Glad you enjoyed it."
+    responses:
+      '200':
+        description: Reply added
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc0001"
+                vendorReply:
+                  message: "Thank you for your feedback! Glad you enjoyed it."
+                  repliedAt: "2025-01-02T10:00:00.000Z"
+              message: "Reply added"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+toggle-approval:
+  patch:
+    tags: [Reviews]
+    summary: Approve or unapprove a review (admin only)
+    description: Toggles `isApproved`. Only approved reviews appear in public listing.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    responses:
+      '200':
+        description: Approval toggled
+        content:
+          application/json:
+            examples:
+              approved:
+                value:
+                  statusCode: 200
+                  data:
+                    _id: "64abc123def456789abc0001"
+                    isApproved: true
+                  message: "Review approved"
+              unapproved:
+                value:
+                  statusCode: 200
+                  data:
+                    _id: "64abc123def456789abc0001"
+                    isApproved: false
+                  message: "Review unapproved"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"
+
+admin-delete-review:
+  delete:
+    tags: [Reviews]
+    summary: Delete any review (admin only)
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc0001"
+    responses:
+      '200':
+        description: Review deleted by admin
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Review deleted by admin"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              message: "Not Found"

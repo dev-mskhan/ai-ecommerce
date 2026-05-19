@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { cn, formatPrice } from '@/utils/helpers';
 import { useMyOrders } from '@store/hooks/useOrder';
 
 export const OrdersTab = () => {
     const { data: res, isLoading, isError } = useMyOrders();
-    const orders = res?.data?.orders;
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-    const order = orders?.find((o: any) => o._id?.toString() === selectedOrderId);
-    console.log('orders', orders);
+    const [orders, order] = useMemo(() => {
+        const orders = res?.data?.orders;
+        const order = orders?.find((o: any) => o._id?.toString() === selectedOrderId);
+        return [orders, order];
+    }, [res, selectedOrderId]);
+    console.log(orders, order)
     if (isLoading) return <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Loading orders...</p>;
     if (isError) return <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Failed to load orders.</p>;
 

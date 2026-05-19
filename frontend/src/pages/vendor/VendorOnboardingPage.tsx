@@ -9,6 +9,7 @@ import { cn } from '@/utils/helpers';
 import { useVendorActions } from '@/store/hooks/useVendor';
 import toast from 'react-hot-toast';
 import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
+import { riftToast } from '@/components/common/toastContainer';
 
 const addressSchema = z.object({
   line: z.string().min(1, "Address line is required").trim(),
@@ -65,13 +66,14 @@ export const VendorOnboardingPage: React.FC = () => {
   };
 
   const onSubmit = async (data: VendorForm) => {
-    try {
-      await upgradeToVendor(data).unwrap();
-      riftToast.success('Vendor registration successful!');
-      navigate('/vendor');
-    } catch (err: any) {
-      riftToast.error(err?.data?.message ?? 'Registration failed');
-    }
+    await riftToast.promise(
+      upgradeToVendor(data).unwrap(),
+      {
+        loading: 'Registering as vendor...',
+        success: 'Vendor registration successful!',
+        error: 'Registration failed',
+      }
+    )
   };
 
   return (

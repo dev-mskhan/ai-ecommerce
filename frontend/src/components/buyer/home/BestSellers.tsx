@@ -1,10 +1,12 @@
 import { ProductCard } from '@/components/buyer/ProductCard';
 import { Link } from 'react-router-dom';
 import { useProducts } from '@/store/hooks/useProduct';
+import { PageSkeleton } from '@/components/common/PageSkeleton';
+import { useMemo } from 'react';
 
 export const BestSellers = () => {
-    const { data, isSuccess, error } = useProducts({ limit: "5", sort: "rating", order: "desc" });
-    const products = data?.data?.products;
+    const { data, isSuccess, isLoading, isError } = useProducts({ limit: "5", sort: "rating", order: "desc" });
+    const products = useMemo(() => data?.data?.products || [], [data]);
     return (
         <section>
             <div className="flex items-baseline justify-between mb-10 pb-4">
@@ -13,6 +15,7 @@ export const BestSellers = () => {
                     View All
                 </Link>
             </div>
+            {(isLoading || isError) && <PageSkeleton />}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
                 {isSuccess && products.map(product => {
                     if (product.discountPrice) {

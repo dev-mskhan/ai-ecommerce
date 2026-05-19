@@ -6,7 +6,7 @@ interface CartItem {
     name: string;
     slug: string;
     price: number;
-    discountPrice?: number;
+    discountPrice: number;
     images: string[];
     vendorName?: string;
     categoryName?: string;
@@ -31,20 +31,29 @@ export const useCartStore = create<CartStore>()(
             items: [],
             addItem: (newItem) => {
                 const { items } = get();
+
+                // normalize: discountPrice always falls back to price
+                const normalized: CartItem = {
+                    ...newItem,
+                    price: Number(newItem.price) || 0,
+                    discountPrice: Number(newItem.discountPrice) || Number(newItem.price) || 0,
+                    quantity: Math.max(1, newItem.quantity ?? 1),
+                };
+
                 const existingItem = items.find(
-                    (item) => item.id === newItem.id && item.variant === newItem.variant
+                    (item) => item.id === normalized.id && item.variant === normalized.variant
                 );
 
                 if (existingItem) {
                     set({
                         items: items.map((item) =>
-                            item.id === newItem.id && item.variant === newItem.variant
+                            item.id === normalized.id && item.variant === normalized.variant
                                 ? { ...item, quantity: item.quantity + 1 }
                                 : item
                         ),
                     });
                 } else {
-                    set({ items: [...items, newItem] });
+                    set({ items: [...items, normalized] });
                 }
             },
             removeItem: (id, variant) => {
@@ -66,11 +75,18 @@ export const useCartStore = create<CartStore>()(
             clearCart: () => set({ items: [] }),
             getTotal: () => {
                 return get().items.reduce(
-                    (total, item) => total + item.price * item.quantity,
+                    (total, item) => total + (item.discountPrice ?? item.price) * item.quantity,
                     0
                 );
             },
         }),
-        { name: 'cart-storage' }
+        {
+            name: 'cart-storage',
+            version: 2,
+            migrate: (persistedState: any, version) => {
+                if (version < 2) return { items: [] };
+                return persistedState;
+            },
+        }
     )
 );

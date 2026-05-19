@@ -17,13 +17,13 @@ const router = Router();
 
 // public routes
 router.get("/", validateRequest(searchProductSchema, "query"), getAllProducts);
+router.get("/vendor", authHandler, roleCheck("vendor"), getVendorProducts);
 router.get("/:id", getProductById);
 router.get("/slug/:slug", getProductBySlug);
 
 // vendor routes
-router.get("/vendor", authHandler, roleCheck("vendor"), getVendorProducts);
-router.post("/vendor", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(createProductSchema, "body"), createProduct);
-router.patch("/vendor/:id", authHandler, roleCheck("vendor"), parseFormData("products", true), validateRequest(updateProductSchema, "body"), updateProduct);
+router.post("/vendor", authHandler, roleCheck("vendor"), parseFormData("images", true), validateRequest(createProductSchema, "body"), createProduct);
+router.patch("/vendor/:id", authHandler, roleCheck("vendor"), parseFormData("images", true), validateRequest(updateProductSchema, "body"), updateProduct);
 router.delete("/vendor/:id", authHandler, roleCheck("vendor"), deleteProduct);
 router.patch("/vendor/:id/toggle", authHandler, roleCheck("vendor"), toggleProductStatus);
 router.patch('/vendor/:id/stock', authHandler, roleCheck('vendor'), validateRequest(updateStockSchema, "body", "params"), updateStock);

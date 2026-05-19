@@ -1,20 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm, Watch } from 'react-hook-form';
-import { Truck, ShieldCheck, ArrowLeft, Lock } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
 import { useCartStore } from '@store/zustand/cartStore';
 import { cn, formatPrice } from '@/utils/helpers';
 import { Button } from '@/components/ui/Button';
 import { useOrderActions } from '@/store/hooks/useOrder';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import toast from 'react-hot-toast';
 import { riftToast } from '@/components/common/toastContainer';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface DeliveryForm {
-  fullName: string;
   phone: string;
   addressLine1: string;
   city: string;
@@ -24,7 +22,100 @@ interface DeliveryForm {
   paymentMethod: 'stripe' | 'cod';
 }
 
-// Payment form (inside Elements context)
+// ── Validation rules ────────────────────────────────────────────────────────
+
+const PAKISTANI_CITIES = [
+  'karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad',
+  'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala',
+  'hyderabad', 'abbottabad', 'bahawalpur', 'sargodha', 'sukkur',
+];
+
+const PAKISTANI_PROVINCES = [
+  'sindh', 'punjab', 'khyber pakhtunkhwa', 'kpk', 'balochistan',
+  'gilgit baltistan', 'azad kashmir', 'islamabad capital territory', 'ict',
+];
+
+const validations = {
+  phone: {
+    required: 'Phone number is required',
+    validate: (val: string) => {
+      // Remove all spaces/dashes for validation
+      const cleaned = val.replace(/[\s\-]/g, '');
+      // Pakistani formats: 03XXXXXXXXX (11 digits) or +923XXXXXXXXX or 923XXXXXXXXX
+      const local = /^03[0-9]{9}$/.test(cleaned);
+      const intl = /^(\+92|92)3[0-9]{9}$/.test(cleaned);
+      if (!local && !intl) return 'Enter a valid Pakistani number (e.g. 03001234567)';
+      // Check for spaces — not allowed
+      if (/\s/.test(val)) return 'No spaces allowed in phone number';
+      return true;
+    },
+  },
+
+  addressLine1: {
+    required: 'Street address is required',
+    minLength: { value: 10, message: 'Address must be at least 10 characters' },
+    maxLength: { value: 120, message: 'Address too long (max 120 characters)' },
+    validate: (val: string) => {
+      if (/^[^a-zA-Z0-9]/.test(val)) return 'Address must start with a letter or number';
+      // Must contain at least one number (house/building number)
+      if (!/\d/.test(val)) return 'Include your house/building number';
+      return true;
+    },
+  },
+
+  city: {
+    required: 'City is required',
+    minLength: { value: 2, message: 'City name too short' },
+    validate: (val: string) => {
+      if (!/^[a-zA-Z\s\-]+$/.test(val)) return 'City name should only contain letters';
+      const lower = val.toLowerCase().trim();
+      if (!PAKISTANI_CITIES.includes(lower))
+        return 'Enter a valid Pakistani city';
+      return true;
+    },
+  },
+
+  state: {
+    required: 'Province / State is required',
+    validate: (val: string) => {
+      if (!/^[a-zA-Z\s]+$/.test(val)) return 'Province should only contain letters';
+      const lower = val.toLowerCase().trim();
+      if (!PAKISTANI_PROVINCES.includes(lower))
+        return 'Enter a valid Pakistani province (e.g. Sindh, Punjab)';
+      return true;
+    },
+  },
+
+  postalCode: {
+    required: 'Postal code is required',
+    pattern: {
+      value: /^\d{5}$/,
+      message: 'Pakistani postal code must be exactly 5 digits (e.g. 74000)',
+    },
+  },
+
+  paymentMethod: {
+    required: 'Please select a payment method',
+  },
+};
+
+// ── Error message component ──────────────────────────────────────────────────
+const FieldError = ({ message }: { message?: string }) =>
+  message ? (
+    <p className="text-[9px] text-red-500 mt-1 font-mono">{message}</p>
+  ) : null;
+
+// ── Input wrapper for consistent styling ─────────────────────────────────────
+const inputClass = (hasError: boolean, disabled = false) =>
+  cn(
+    'w-full bg-[#1A1A1A]/5 p-6 outline-none border-b transition-all font-light italic',
+    hasError
+      ? 'border-red-400 bg-red-50/30'
+      : 'border-transparent focus:border-[#1A1A1A]',
+    disabled && 'opacity-40 cursor-not-allowed',
+  );
+
+// ── Stripe payment sub-form ──────────────────────────────────────────────────
 const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -35,9 +126,7 @@ const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => voi
     setIsProcessing(true);
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/payment-success`,
-      },
+      confirmParams: { return_url: `${window.location.origin}/payment-success` },
     });
     if (error) riftToast.error(error.message ?? 'Payment failed');
     setIsProcessing(false);
@@ -53,7 +142,6 @@ const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => voi
           </div>
           <Lock size={20} className="opacity-40" />
         </div>
-        {/* Stripe mounts its own secure card UI here */}
         <div className="bg-white/5 p-6 border-b border-white/10">
           <PaymentElement options={{ layout: 'tabs' }} />
         </div>
@@ -68,10 +156,17 @@ const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => voi
       </div>
 
       <div className="pt-8 flex justify-between items-center">
-        <button onClick={onBack} className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest opacity-40 hover:opacity-100 transition-all">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest opacity-40 hover:opacity-100 transition-all"
+        >
           <ArrowLeft size={14} /> Back
         </button>
-        <Button onClick={handlePay} disabled={isProcessing || !stripe} className="px-16 h-16 text-[10px] uppercase tracking-widest font-bold">
+        <Button
+          onClick={handlePay}
+          disabled={isProcessing || !stripe}
+          className="px-16 h-16 text-[10px] uppercase tracking-widest font-bold"
+        >
           {isProcessing ? 'Processing...' : `Pay ${formatPrice(total)}`}
         </Button>
       </div>
@@ -79,7 +174,7 @@ const StripePaymentForm = ({ total, onBack }: { total: number; onBack: () => voi
   );
 };
 
-// Main page 
+// ── Main page ────────────────────────────────────────────────────────────────
 export const CheckoutPage: React.FC = () => {
   const { items, getTotal, clearCart } = useCartStore();
   const [step, setStep] = React.useState<'delivery' | 'payment'>('delivery');
@@ -88,7 +183,14 @@ export const CheckoutPage: React.FC = () => {
   const { create } = useOrderActions();
   const [createOrder, { isLoading }] = create;
 
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<DeliveryForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<DeliveryForm>({
+    defaultValues: { country: 'Pakistan' },
+  });
 
   const subtotal = getTotal();
   const shipping = subtotal > 10000 ? 0 : 500;
@@ -99,14 +201,13 @@ export const CheckoutPage: React.FC = () => {
   const onDeliverySubmit = async (data: DeliveryForm) => {
     try {
       const res = await createOrder({
+        phone: data.phone,
         shippingAddress: {
-          fullName: data.fullName,
-          phone: data.phone,
           addressLine1: data.addressLine1,
           city: data.city,
           state: data.state,
           postalCode: data.postalCode,
-          country: data.country,
+          country: 'Pakistan',
         },
         items: items.map(item => ({ product: item.id, quantity: item.quantity, price: item.price })),
         totalAmount: total,
@@ -128,6 +229,8 @@ export const CheckoutPage: React.FC = () => {
 
   return (
     <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-12">
+
+      {/* Header */}
       <header className="mb-10 border-b border-[#1A1A1A]/10 pb-8">
         <button
           onClick={() => step === 'delivery' ? navigate('/cart') : setStep('delivery')}
@@ -141,94 +244,149 @@ export const CheckoutPage: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+
+        {/* ── Left: Form ── */}
         <div className="lg:col-span-8">
+
           {step === 'delivery' ? (
             <form onSubmit={handleSubmit(onDeliverySubmit)} className="space-y-16">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Full Name</label>
-                  <input {...register('fullName', { required: 'Required' })}
-                    placeholder="E.g. Elias Thorne"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.fullName && <p className="text-[9px] text-red-500">{errors.fullName.message}</p>}
+
+                {/* Phone */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    Phone Number <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    {...register('phone', validations.phone)}
+                    placeholder="03001234567"
+                    maxLength={13}
+                    className={inputClass(!!errors.phone)}
+                  />
+                  <p className="text-[9px] font-mono opacity-30">Format: 03XXXXXXXXX — no spaces</p>
+                  <FieldError message={errors.phone?.message} />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Phone Number</label>
-                  <input {...register('phone', { required: 'Required' })}
-                    placeholder="0300 1234567"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.phone && <p className="text-[9px] text-red-500">{errors.phone.message}</p>}
+                {/* Street Address — full width */}
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    Street Address <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    {...register('addressLine1', validations.addressLine1)}
+                    placeholder="House #12, Street 4, Block B, DHA Phase 6..."
+                    className={inputClass(!!errors.addressLine1)}
+                  />
+                  <FieldError message={errors.addressLine1?.message} />
                 </div>
 
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Street Address</label>
-                  <input {...register('addressLine1', { required: 'Required' })}
-                    placeholder="House #, Street, Area..."
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.addressLine1 && <p className="text-[9px] text-red-500">{errors.addressLine1.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">City</label>
-                  <input {...register('city', { required: 'Required' })}
+                {/* City */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    City <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    {...register('city', validations.city)}
                     placeholder="Karachi"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.city && <p className="text-[9px] text-red-500">{errors.city.message}</p>}
+                    className={inputClass(!!errors.city)}
+                  />
+                  <FieldError message={errors.city?.message} />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">State / Province</label>
-                  <input {...register('state', { required: 'Required' })}
+                {/* Province */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    Province <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    {...register('state', validations.state)}
                     placeholder="Sindh"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.state && <p className="text-[9px] text-red-500">{errors.state.message}</p>}
+                    className={inputClass(!!errors.state)}
+                  />
+                  <FieldError message={errors.state?.message} />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Postal Code</label>
-                  <input {...register('postalCode', { required: 'Required' })}
+                {/* Postal Code */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    Postal Code <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    {...register('postalCode', validations.postalCode)}
                     placeholder="74000"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.postalCode && <p className="text-[9px] text-red-500">{errors.postalCode.message}</p>}
+                    maxLength={5}
+                    className={inputClass(!!errors.postalCode)}
+                    onKeyDown={e => {
+                      // Only allow digits, backspace, tab, arrows
+                      if (!/[\d]/.test(e.key) && !['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                  <p className="text-[9px] font-mono opacity-30">5-digit Pakistani postal code</p>
+                  <FieldError message={errors.postalCode?.message} />
                 </div>
 
-                <div className="space-y-2">
+                {/* Country — read-only, defaulted to Pakistan */}
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Country</label>
-                  <input {...register('country', { required: 'Required' })}
-                    placeholder="Pakistan"
-                    className="w-full bg-[#1A1A1A]/5 p-6 outline-none border-b border-transparent focus:border-[#1A1A1A] transition-all font-light italic" />
-                  {errors.country && <p className="text-[9px] text-red-500">{errors.country.message}</p>}
+                  <input
+                    {...register('country')}
+                    disabled
+                    value="Pakistan"
+                    className={inputClass(false, true)}
+                  />
+                  <p className="text-[9px] font-mono opacity-30">We currently ship within Pakistan only</p>
                 </div>
 
                 {/* Payment Method */}
                 <div className="md:col-span-2 space-y-4">
-                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Payment Method</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    Payment Method <span className="text-red-400">*</span>
+                  </label>
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       { value: 'stripe', label: 'Credit / Debit Card', sub: 'Powered by Stripe' },
                       { value: 'cod', label: 'Cash on Delivery', sub: 'Pay when you receive' },
                     ].map(opt => (
-                      <label key={opt.value}
+                      <label
+                        key={opt.value}
                         className={cn(
-                          "flex flex-col gap-1 p-6 border cursor-pointer transition-all",
-                          watch('paymentMethod') === opt.value ? "border-[#1A1A1A] bg-[#1A1A1A] text-[#FDFCF8]" : "border-[#1A1A1A]/10 hover:border-[#1A1A1A]/40"
-                        )}>
-                        <input type="radio" value={opt.value} {...register('paymentMethod', { required: true })} className="hidden" />
+                          'flex flex-col gap-1 p-6 border cursor-pointer transition-all',
+                          watch('paymentMethod') === opt.value
+                            ? 'border-[#1A1A1A] bg-[#1A1A1A] text-[#FDFCF8]'
+                            : 'border-[#1A1A1A]/10 hover:border-[#1A1A1A]/40',
+                          errors.paymentMethod && 'border-red-400',
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          value={opt.value}
+                          {...register('paymentMethod', validations.paymentMethod)}
+                          className="hidden"
+                        />
                         <span className="text-[11px] font-bold uppercase tracking-widest">{opt.label}</span>
                         <span className="text-[9px] font-mono opacity-40">{opt.sub}</span>
                       </label>
                     ))}
                   </div>
+                  <FieldError message={errors.paymentMethod?.message} />
                 </div>
+
               </div>
 
+              {/* Submit */}
               <div className="pt-8 flex justify-end">
-                <Button type="submit" disabled={isLoading} className="px-16 h-16 text-[10px] uppercase tracking-widest font-bold">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-16 h-16 text-[10px] uppercase tracking-widest font-bold"
+                >
                   {isLoading ? 'Creating Order...' : 'Proceed to Payment'}
                 </Button>
               </div>
             </form>
+
           ) : clientSecret ? (
             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night' } }}>
               <StripePaymentForm total={total} onBack={() => setStep('delivery')} />
@@ -238,10 +396,12 @@ export const CheckoutPage: React.FC = () => {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* ── Right: Order summary ── */}
         <aside className="lg:col-span-4">
           <div className="bg-[#FDFCF8] border border-[#1A1A1A] p-7 space-y-8">
-            <h3 className="text-[12px] font-bold uppercase tracking-[0.5em] opacity-60 border-b border-[#1A1A1A]/10 pb-4">Order Breakdown</h3>
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.5em] opacity-60 border-b border-[#1A1A1A]/10 pb-4">
+              Order Breakdown
+            </h3>
             <div className="space-y-6 max-h-[300px] overflow-y-auto no-scrollbar">
               {items.map(item => (
                 <div key={item.id} className="flex justify-between items-start gap-4">
@@ -249,7 +409,9 @@ export const CheckoutPage: React.FC = () => {
                     <p className="text-[12px] font-bold uppercase truncate">{item.name}</p>
                     <p className="text-[11px] font-mono opacity-40 italic">QTY: {item.quantity}</p>
                   </div>
-                  <span className="text-[12px] font-bold">{formatPrice((item.discountPrice ?? item.price) * item.quantity)}</span>
+                  <span className="text-[12px] font-bold">
+                    {formatPrice((item.discountPrice ?? item.price) * item.quantity)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -269,6 +431,7 @@ export const CheckoutPage: React.FC = () => {
             </div>
           </div>
         </aside>
+
       </div>
     </div>
   );

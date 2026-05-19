@@ -236,3 +236,117 @@ user-stats:
                         type: integer
                       companyRevenue:
                         type: number
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+get-all-users:
+  get:
+    tags: [Admin]
+    summary: Get all buyers with pagination (admin only)
+    description: Redis-cached per page/limit. Includes active user count (active = updated in last 30 days).
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Users fetched successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                users:
+                  - _id: "64abc123def456789abc1234"
+                    name: "Shahzaib"
+                    email: "shahzaib@example.com"
+                    role: "buyer"
+                    isVerified: true
+                    isBanned: false
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                    updatedAt: "2025-06-01T00:00:00.000Z"
+                total: 200
+                activeUsers: 45
+                page: 1
+                limit: 20
+                totalPages: 10
+              message: "Users fetched successfully"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"
+
+get-all-orders:
+  get:
+    tags: [Admin]
+    summary: Get all orders with pagination (admin only)
+    description: Redis-cached per page/limit.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+    responses:
+      '200':
+        description: Orders fetched successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                orders:
+                  - _id: "64abc123def456789abc5678"
+                    buyer: "64abc123def456789abc1234"
+                    items:
+                      - product: "64abc123def456789abc9999"
+                        quantity: 2
+                        price: 499.99
+                    totalAmount: 999.98
+                    paymentStatus: "paid"
+                    orderStatus: "delivered"
+                    createdAt: "2025-01-01T00:00:00.000Z"
+                total: 540
+                page: 1
+                limit: 20
+                totalPages: 27
+              message: "Orders fetched successfully"
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              message: "Unauthorized"
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              message: "Forbidden"

@@ -56,6 +56,8 @@ export const CustomToasterContent: React.FC = () => (
 );
 
 export const riftToast = {
+    promise: <T,>(promise: Promise<T>, msgs: { loading: string; success: string; error: string }) =>
+        toast.promise(promise, msgs),
     success: (msg: string) => toast.success(msg),
     error: (msg: string) => toast.error(msg),
     warning: (msg: string) => toast(msg, { variant: 'warning' } as any),

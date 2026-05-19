@@ -5,12 +5,24 @@ export const redisConnection = {
     port: Number(new URL(env.redisUrl).port) || 6379,
     maxRetriesPerRequest: null,
 };
-const redis = new Redis(env.redisUrl, {
-    retryStrategy(times) {
-        console.log(`Retrying Redis connection... attempt ${times}`);
-        return Math.min(times * 500, 5000);
+const redisOptions = {
+    host: new URL(env.redisUrl).hostname,
+    port: Number(new URL(env.redisUrl).port) || 6379,
+    password: new URL(env.redisUrl).password,
+    tls: {},
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    retryStrategy(times: number) {
+        if (times > 10) return null;
+        return Math.min(times * 200, 2000);
     },
-});
+    reconnectOnError(err: Error) {
+        return err.message.includes('ECONNRESET') ||
+            err.message.includes('ETIMEDOUT');
+    },
+};
+
+const redis = new Redis(redisOptions);
 
 redis.on("connect", () => console.log("Redis connected"));
 

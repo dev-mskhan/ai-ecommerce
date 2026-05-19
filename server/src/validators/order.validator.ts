@@ -3,8 +3,6 @@ import { z } from "zod";
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid ID");
 
 const shippingAddressSchema = z.object({
-    fullName: z.string().min(2).max(100).trim(),
-    phone: z.string().min(7).max(20).trim(),
     addressLine1: z.string().min(5).max(200).trim(),
     addressLine2: z.string().max(200).trim().optional(),
     city: z.string().min(2).max(100).trim(),
@@ -23,11 +21,12 @@ export const createOrderSchema = z.object({
     body: z.object({
         items: z.array(orderItemSchema).min(1, "Order must have at least one item"),
         shippingAddress: shippingAddressSchema,
-        paymentMethod: z.enum(["stripe", "mock", "cod"]), phone: z.string().regex(
+        paymentMethod: z.enum(["stripe", "mock", "cod"]),
+        phone: z.string().regex(
             /^(\+92|0)3[0-9]{9}$/,
             "Must be a valid Pakistani number (03001234567 or +923001234567)"
         ),
-        couponCode: z.string().trim().optional(),
+        couponCode: z.string().trim().optional()
     })
 });
 

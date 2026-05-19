@@ -3,7 +3,7 @@
   "info": {
     "title": "Multi-Vendor E-Commerce API",
     "version": "1.0.0",
-    "description": "## Authentication\n\nThis API uses **HTTP-only signed cookies** for auth — not Authorization headers.\n\n### Full Auth Flow:\n1. POST /auth/signup                  → account created, verification email sent\n2. POST /auth/verify-email/:token     → email verified, logged in automatically\n3. POST /auth/login                   → access_token + refresh_token set as cookies\n4. (use protected routes)             → cookies sent automatically by browser\n5. POST /auth/refresh-access-token    → get new tokens when access expires\n6. POST /auth/logout                  → cookies cleared, token invalidated in DB\n\n### Password Reset Flow:\n1. POST /auth/forgot-password   → reset email sent (expires 1hr)\n2. PATCH /auth/reset-password/:token → new password set\n\n### Cookie Details:\n| Cookie | httpOnly | Signed | Expiry |\n|--------|----------|--------|--------|\n| access_token | ✅ | ✅ | 15min |\n| refresh_token | ✅ | ✅ | 7 days |\n\n> Cookies are set automatically on login and verify-email.\n> You do not need to manually handle tokens on the frontend.\n"
+    "description": "## Authentication\nThis API uses HTTP-only signed cookies for auth — not Authorization headers.\n"
   },
   "servers": [
     {
@@ -12,48 +12,58 @@
   ],
   "tags": [
     {
-      "name": "Auth",
-      "description": "Registration, login, email verification, and password reset"
+      "name": "Auth"
     },
     {
-      "name": "Products",
-      "description": "Product management"
+      "name": "Products"
     },
     {
-      "name": "Products - Vendor",
-      "description": "Product management for vendors"
+      "name": "Products - Vendor"
     },
     {
-      "name": "Products - Admin",
-      "description": "Product management for admins"
+      "name": "Products - Admin"
     },
     {
-      "name": "Categories",
-      "description": "Category management"
+      "name": "Categories"
     },
     {
-      "name": "Chat",
-      "description": "AI-powered chat with optional auth"
+      "name": "Chat"
     },
     {
-      "name": "Coupons",
-      "description": "Coupon management and validation"
+      "name": "Chat - Support"
     },
     {
-      "name": "Orders",
-      "description": "Order placement and management for buyers"
+      "name": "Orders"
     },
     {
-      "name": "Orders - Vendor",
-      "description": "Vendor order management"
+      "name": "Orders - Vendor"
     },
     {
-      "name": "Orders - Admin",
-      "description": "Admin order management"
+      "name": "Orders - Admin"
     },
     {
-      "name": "Admin",
-      "description": "Admin management for vendors, orders, users, and reported products"
+      "name": "Vendor"
+    },
+    {
+      "name": "Vendor - Analytics"
+    },
+    {
+      "name": "Vendor - Reviews"
+    },
+    {
+      "name": "Coupons"
+    },
+    {
+      "name": "Reviews"
+    },
+    {
+      "name": "User"
+    },
+    {
+      "name": "Admin"
+    },
+    {
+      "name": "Notifications"
     }
   ],
   "components": {
@@ -597,7 +607,59 @@
         }
       }
     },
-    "/products/{slug}": {
+    "/products/{id}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Get product by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc1234"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123",
+                    "name": "Nike Air Max 90",
+                    "slug": "nike-air-max-90",
+                    "price": 120,
+                    "images": [],
+                    "isActive": true
+                  },
+                  "message": "Product fetched"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "Product not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/slug/{slug}": {
       "get": {
         "tags": [
           "Products"
@@ -650,6 +712,95 @@
       }
     },
     "/products/vendor": {
+      "post": {
+        "tags": [
+          [
+            "Products - Vendor"
+          ]
+        ],
+        "summary": "Create a product",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "price",
+                  "category",
+                  "images"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Nike Air Max 90"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "example": 120
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": "64abc123def456789abc1234"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 201,
+                  "data": {
+                    "_id": "64abc123",
+                    "name": "Nike Air Max 90",
+                    "price": 120
+                  },
+                  "message": "Product created"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or no images",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "data": null,
+                  "message": "At least one image is required"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "Products - Vendor"
@@ -709,7 +860,45 @@
         }
       }
     },
-    "/products/{id}": {
+    "/products/vendor/{id}": {
+      "delete": {
+        "tags": [
+          "Products - Vendor"
+        ],
+        "summary": "Delete a product",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Product deleted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Products - Vendor"
@@ -792,7 +981,7 @@
         }
       }
     },
-    "/products/{id}/toggle": {
+    "/products/vendor/{id}/toggle": {
       "patch": {
         "tags": [
           "Products - Vendor"
@@ -822,6 +1011,72 @@
                   "statusCode": 200,
                   "data": {},
                   "message": "Product activated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/vendor/{id}/stock": {
+      "patch": {
+        "tags": [
+          "Products - Vendor"
+        ],
+        "summary": "Update product stock",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "stock"
+                ],
+                "properties": {
+                  "stock": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stock updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {},
+                  "message": "Stock updated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "Product not found"
                 }
               }
             }
@@ -899,6 +1154,65 @@
                   "statusCode": 200,
                   "data": {},
                   "message": "Product featured"
+                }
+              }
+            }
+          }
+        }
+      },
+      "update-stock": {
+        "patch": {
+          "tags": [
+            "Products - Vendor"
+          ],
+          "summary": "Update product stock",
+          "security": [
+            {
+              "cookieAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "example": {
+                  "stock": 10
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Stock updated",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "statusCode": 200,
+                    "data": {},
+                    "message": "Stock updated"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Product not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "statusCode": 404,
+                    "data": null,
+                    "message": "Product not found"
+                  }
                 }
               }
             }
@@ -1210,22 +1524,68 @@
         }
       }
     },
+    "/categories/slug/{slug}": {
+      "get": {
+        "tags": [
+          "Categories"
+        ],
+        "summary": "Get category by slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "shoes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123",
+                    "name": "Shoes",
+                    "slug": "shoes",
+                    "isActive": true
+                  },
+                  "message": "Category fetched"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "Category not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/chats/send": {
       "post": {
         "tags": [
           "Chat"
         ],
-        "summary": "Send a message (AI chat)",
-        "description": "Sends a message to the AI. Auth is optional — guests can chat without logging in.",
-        "parameters": [
+        "summary": "Send a message to AI chat",
+        "description": "Sends a message and gets an AI response. Auth is optional — guests can chat without logging in.",
+        "security": [
           {
-            "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
+            "cookieAuth": []
+          },
+          {}
         ],
         "requestBody": {
           "required": true,
@@ -1239,7 +1599,7 @@
                 "properties": {
                   "message": {
                     "type": "string",
-                    "example": "Show me running shoes under $100"
+                    "example": "What laptops do you have under $1000?"
                   },
                   "chatId": {
                     "type": "string",
@@ -1259,10 +1619,21 @@
                   "statusCode": 200,
                   "data": {
                     "chatId": "64abc123def456789abc1234",
-                    "reply": "Here are some running shoes under $100",
+                    "reply": "Here are some laptops under $1000...",
                     "products": []
                   },
                   "message": "Message sent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "message": "Bad Request"
                 }
               }
             }
@@ -1275,7 +1646,7 @@
         "tags": [
           "Chat"
         ],
-        "summary": "Get all chats for logged-in user",
+        "summary": "Get all AI chats for current user",
         "security": [
           {
             "cookieAuth": []
@@ -1290,9 +1661,9 @@
                   "statusCode": 200,
                   "data": [
                     {
-                      "_id": "64abc123",
-                      "createdAt": "2024-01-01T00:00:00.000Z",
-                      "updatedAt": "2024-01-02T00:00:00.000Z",
+                      "_id": "64abc123def456789abc1234",
+                      "createdAt": "2025-01-01T00:00:00.000Z",
+                      "updatedAt": "2025-01-02T00:00:00.000Z",
                       "messages": []
                     }
                   ],
@@ -1302,7 +1673,15 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
           }
         }
       }
@@ -1312,7 +1691,7 @@
         "tags": [
           "Chat"
         ],
-        "summary": "Get a single chat with messages",
+        "summary": "Get a specific AI chat with full message history",
         "security": [
           {
             "cookieAuth": []
@@ -1337,11 +1716,16 @@
                 "example": {
                   "statusCode": 200,
                   "data": {
-                    "_id": "64abc123",
+                    "_id": "64abc123def456789abc1234",
                     "messages": [
                       {
                         "role": "user",
-                        "content": "Show me shoes",
+                        "content": "Show me laptops",
+                        "products": []
+                      },
+                      {
+                        "role": "assistant",
+                        "content": "Here are some options...",
                         "products": []
                       }
                     ]
@@ -1351,14 +1735,24 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
           "404": {
-            "description": "Chat not found",
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "example": {
                   "statusCode": 404,
-                  "data": null,
-                  "message": "Chat not found"
+                  "message": "Not Found"
                 }
               }
             }
@@ -1369,7 +1763,7 @@
         "tags": [
           "Chat"
         ],
-        "summary": "Delete a chat",
+        "summary": "Delete an AI chat",
         "security": [
           {
             "cookieAuth": []
@@ -1382,7 +1776,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "64abc123def456789abc1234"
           }
         ],
         "responses": {
@@ -1394,6 +1789,1678 @@
                   "statusCode": 200,
                   "data": null,
                   "message": "Chat deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chats/support": {
+      "post": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Create a new support ticket",
+        "description": "Creates a new support chat and notifies all admins via notification socket.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "I need help with my order #12345"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Support ticket created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 201,
+                  "data": {
+                    "_id": "64abc123def456789abc5678",
+                    "user": "64abc123def456789abc1234",
+                    "type": "support",
+                    "status": "open",
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "I need help with my order #12345"
+                      }
+                    ],
+                    "assignedAdmin": null,
+                    "createdAt": "2025-01-01T00:00:00.000Z"
+                  },
+                  "message": "Support ticket created"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Get current user's support chats",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Support chats fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": "64abc123def456789abc5678",
+                      "status": "open",
+                      "assignedAdmin": null,
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "I need help with my order"
+                        }
+                      ],
+                      "createdAt": "2025-01-01T00:00:00.000Z",
+                      "updatedAt": "2025-01-01T00:00:00.000Z"
+                    }
+                  ],
+                  "message": "Support chats fetched"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chats/support/all": {
+      "get": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Get all support tickets (admin only)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "closed"
+              ]
+            },
+            "example": "open"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All support chats fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": "64abc123def456789abc5678",
+                      "user": {
+                        "_id": "64abc123def456789abc1234",
+                        "name": "Shahzaib",
+                        "email": "shahzaib@example.com"
+                      },
+                      "assignedAdmin": {
+                        "_id": "64abc123def456789abc9999",
+                        "name": "Admin",
+                        "email": "admin@example.com"
+                      },
+                      "status": "open",
+                      "messages": [],
+                      "createdAt": "2025-01-01T00:00:00.000Z",
+                      "updatedAt": "2025-01-01T00:00:00.000Z"
+                    }
+                  ],
+                  "message": "All support chats fetched"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chats/support/{chatId}": {
+      "get": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Get a specific support ticket",
+        "description": "Accessible by the ticket owner or any admin.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc5678"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Support chat fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc5678",
+                    "user": {
+                      "_id": "64abc123def456789abc1234",
+                      "name": "Shahzaib",
+                      "email": "shahzaib@example.com"
+                    },
+                    "assignedAdmin": null,
+                    "status": "open",
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "I need help"
+                      }
+                    ]
+                  },
+                  "message": "Support chat fetched"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Send a message in a support ticket",
+        "description": "Both the ticket owner and admins can send messages.\n- Admin sending auto-assigns themselves to the ticket.\n- Emits `chat:new_message` to the socket room `chat:{chatId}`.\n- Sends a notification to the other party.\n",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc5678"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Your order has been dispatched."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc5678",
+                    "status": "open",
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "I need help with my order #12345"
+                      },
+                      {
+                        "role": "admin",
+                        "content": "Your order has been dispatched."
+                      }
+                    ]
+                  },
+                  "message": "Message sent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ticket is closed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "data": null,
+                  "message": "This support ticket is closed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chats/support/{chatId}/close": {
+      "patch": {
+        "tags": [
+          "Chat - Support"
+        ],
+        "summary": "Close a support ticket (admin only)",
+        "description": "Marks the ticket as closed.\n- Emits `chat:closed` to the socket room `chat:{chatId}`.\n- Sends a notification to the ticket owner.\n",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "chatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc5678"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Support ticket closed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc5678",
+                    "status": "closed"
+                  },
+                  "message": "Support ticket closed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Already closed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "data": null,
+                  "message": "Ticket is already closed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/create": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Place a new order",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "shippingAddress",
+                  "paymentMethod"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "product",
+                        "quantity"
+                      ],
+                      "properties": {
+                        "product": {
+                          "type": "string",
+                          "example": "664f1b2c9a8e4d001f3c7a11"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "example": 2
+                        },
+                        "selectedVariants": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "example": {
+                            "size": "42",
+                            "color": "Black"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "shippingAddress": {
+                    "type": "object",
+                    "required": [
+                      "fullName",
+                      "phone",
+                      "addressLine1",
+                      "city",
+                      "state",
+                      "postalCode",
+                      "country"
+                    ],
+                    "properties": {
+                      "fullName": {
+                        "type": "string",
+                        "example": "Ahmed Raza"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "example": "03001234567"
+                      },
+                      "addressLine1": {
+                        "type": "string",
+                        "example": "House 12, Block B"
+                      },
+                      "addressLine2": {
+                        "type": "string",
+                        "example": "Near City Hospital"
+                      },
+                      "city": {
+                        "type": "string",
+                        "example": "Karachi"
+                      },
+                      "state": {
+                        "type": "string",
+                        "example": "Sindh"
+                      },
+                      "postalCode": {
+                        "type": "string",
+                        "example": "75500"
+                      },
+                      "country": {
+                        "type": "string",
+                        "example": "Pakistan"
+                      }
+                    }
+                  },
+                  "couponCode": {
+                    "type": "string",
+                    "example": "SAVE20"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "stripe",
+                      "cod"
+                    ],
+                    "example": "stripe"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order placed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clientSecret": {
+                      "type": "string",
+                      "description": "Stripe client secret (only for stripe payments)",
+                      "example": "pi_3OqX2t_secret_xyz"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid product, insufficient stock, or coupon error"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get my orders",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orders fetched"
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get order by ID (buyer, vendor, or admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order fetched"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/customer/{id}/cancel": {
+      "patch": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Cancel an order (buyer)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Changed my mind"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled"
+          },
+          "400": {
+            "description": "Cannot cancel order in current status"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/vendor": {
+      "get": {
+        "tags": [
+          "Orders - Vendor"
+        ],
+        "summary": "Get vendor's orders (only their items)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor orders fetched"
+          }
+        }
+      }
+    },
+    "/orders/vendor/{id}/status": {
+      "patch": {
+        "tags": [
+          "Orders - Vendor"
+        ],
+        "summary": "Update item status for vendor's items",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "confirmed",
+                      "processing",
+                      "shipped"
+                    ],
+                    "example": "processing"
+                  },
+                  "note": {
+                    "type": "string",
+                    "example": "Packed and ready"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order status updated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/admin": {
+      "get": {
+        "tags": [
+          "Orders - Admin"
+        ],
+        "summary": "Get all orders (admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All orders fetched"
+          }
+        }
+      }
+    },
+    "/orders/admin/{id}/status": {
+      "patch": {
+        "tags": [
+          "Orders - Admin"
+        ],
+        "summary": "Update order status (admin)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "orderId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "cancelled",
+                      "delivered",
+                      "refunded"
+                    ],
+                    "example": "delivered"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "example": "Delivered to customer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order status updated"
+          },
+          "400": {
+            "description": "Order already in this status"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/vendors/upgrade": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Upgrade buyer account to vendor",
+        "description": "Submits a vendor application. Requires buyer role. Awaits admin approval.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "storeName",
+                  "phoneNumber",
+                  "addresses"
+                ],
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "example": "Shahzaib's Store"
+                  },
+                  "storeDescription": {
+                    "type": "string",
+                    "example": "Premium quality products"
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "example": "+923001234567"
+                  },
+                  "addresses": {
+                    "type": "string",
+                    "description": "JSON stringified array of addresses",
+                    "example": "[{\"street\":\"123 Main St\",\"city\":\"Karachi\",\"country\":\"PK\"}]"
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Application submitted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Vendor application submitted. Awaiting admin approval."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a buyer",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "data": null,
+                  "message": "Access denied"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already a vendor",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 409,
+                  "data": null,
+                  "message": "Already a vendor"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/update": {
+      "patch": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Update vendor profile",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "storeName": {
+                    "type": "string",
+                    "example": "Updated Store Name"
+                  },
+                  "storeDescription": {
+                    "type": "string",
+                    "example": "Updated description"
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "example": "+923001234567"
+                  },
+                  "addresses": {
+                    "type": "string",
+                    "description": "JSON stringified array of addresses"
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vendor profile updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Vendor profile updated successfully."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a vendor",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "data": null,
+                  "message": "Not a vendor"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "User not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/profile": {
+      "get": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Get current vendor profile",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor profile fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc1234",
+                    "name": "Shahzaib",
+                    "email": "shahzaib@example.com",
+                    "role": "vendor",
+                    "storeName": "Shahzaib's Store",
+                    "storeDescription": "Premium products",
+                    "storeAvatar": "https://res.cloudinary.com/...",
+                    "phoneNumber": "+923001234567",
+                    "isApproved": true,
+                    "isBanned": false
+                  },
+                  "message": "Profile fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/analytics/dashboard": {
+      "get": {
+        "tags": [
+          "Vendor - Analytics"
+        ],
+        "summary": "Get vendor dashboard stats",
+        "description": "Returns net/gross revenue, total orders, pending orders, total products. Cached for 5 minutes.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard stats fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "netRevenue": 47500,
+                    "grossRevenue": 50000,
+                    "totalOrders": 120,
+                    "pendingOrders": 8,
+                    "totalProducts": 34
+                  },
+                  "message": "Dashboard stats fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/analytics/revenue": {
+      "get": {
+        "tags": [
+          "Vendor - Analytics"
+        ],
+        "summary": "Get monthly revenue analytics",
+        "description": "Returns monthly breakdown of gross/net revenue and order count. Cached for 5 minutes.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue analytics fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": {
+                        "month": 4,
+                        "year": 2025
+                      },
+                      "grossRevenue": 25000,
+                      "netRevenue": 23750,
+                      "orderCount": 60
+                    },
+                    {
+                      "_id": {
+                        "month": 5,
+                        "year": 2025
+                      },
+                      "grossRevenue": 25000,
+                      "netRevenue": 23750,
+                      "orderCount": 60
+                    }
+                  ],
+                  "message": "Revenue analytics fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/analytics/sales": {
+      "get": {
+        "tags": [
+          "Vendor - Analytics"
+        ],
+        "summary": "Get product sales report",
+        "description": "Returns per-product sales breakdown sorted by revenue. Cached for 5 minutes.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sales report fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": "64abc123def456789abc1234",
+                      "productName": "Wireless Headphones",
+                      "productImage": "https://res.cloudinary.com/...",
+                      "totalQuantitySold": 45,
+                      "grossRevenue": 22500,
+                      "netRevenue": 21375,
+                      "orderCount": 38
+                    }
+                  ],
+                  "message": "Sales report fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/analytics/inventory": {
+      "get": {
+        "tags": [
+          "Vendor - Analytics"
+        ],
+        "summary": "Get inventory status",
+        "description": "Returns products grouped into out_of_stock, low_stock, and healthy. Cached for 5 minutes.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory status fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "out_of_stock": [
+                      {
+                        "_id": "64abc123def456789abc1234",
+                        "name": "USB Hub",
+                        "stock": 0,
+                        "price": 1500,
+                        "images": "https://res.cloudinary.com/..."
+                      }
+                    ],
+                    "low_stock": [
+                      {
+                        "_id": "64abc123def456789abc1235",
+                        "name": "Mechanical Keyboard",
+                        "stock": 4,
+                        "price": 8500,
+                        "images": "https://res.cloudinary.com/..."
+                      }
+                    ],
+                    "healthy": [
+                      {
+                        "_id": "64abc123def456789abc1236",
+                        "name": "Wireless Mouse",
+                        "stock": 120,
+                        "price": 2500,
+                        "images": "https://res.cloudinary.com/..."
+                      }
+                    ]
+                  },
+                  "message": "Inventory status fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/analytics/top-products": {
+      "get": {
+        "tags": [
+          "Vendor - Analytics"
+        ],
+        "summary": "Get top 5 products by revenue",
+        "description": "Returns top 5 best-selling products with ratings and slug. Cached for 5 minutes.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top products fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": "64abc123def456789abc1234",
+                      "productName": "Wireless Headphones",
+                      "productImage": "https://res.cloudinary.com/...",
+                      "totalQuantitySold": 45,
+                      "grossRevenue": 22500,
+                      "netRevenue": 21375,
+                      "orderCount": 38,
+                      "product": {
+                        "ratings": 4.5,
+                        "slug": "wireless-headphones"
+                      }
+                    }
+                  ],
+                  "message": "Top products fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/reviews": {
+      "get": {
+        "tags": [
+          "Vendor - Reviews"
+        ],
+        "summary": "Get all reviews for vendor's products",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviews fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "reviews": [
+                      {
+                        "_id": "64abc123def456789abc1234",
+                        "rating": 5,
+                        "comment": "Excellent product!",
+                        "buyer": {
+                          "name": "John Doe",
+                          "avatar": "https://res.cloudinary.com/..."
+                        },
+                        "product": {
+                          "name": "Wireless Headphones",
+                          "slug": "wireless-headphones",
+                          "images": [
+                            "https://res.cloudinary.com/..."
+                          ]
+                        },
+                        "vendorReply": null,
+                        "createdAt": "2025-05-01T10:00:00.000Z"
+                      }
+                    ],
+                    "total": 42,
+                    "page": 1,
+                    "limit": 20,
+                    "totalPages": 3
+                  },
+                  "message": "Reviews fetched successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vendors/reviews/{id}/reply": {
+      "patch": {
+        "tags": [
+          "Vendor - Reviews"
+        ],
+        "summary": "Reply to a product review",
+        "description": "Vendor can reply once per review. Subsequent attempts return 400.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc1234"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Thank you for your feedback!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reply posted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc1234",
+                    "vendorReply": {
+                      "message": "Thank you for your feedback!",
+                      "repliedAt": "2025-05-19T10:00:00.000Z"
+                    }
+                  },
+                  "message": "Reply posted successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Already replied",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "data": null,
+                  "message": "You have already replied to this review"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not your product's review",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "data": null,
+                  "message": "You are not authorized to reply to this review"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Review not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "Review not found"
                 }
               }
             }
@@ -1791,12 +3858,187 @@
         }
       }
     },
-    "/orders": {
+    "/reviews/product/{productId}": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Get approved reviews for a product",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc1234"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "rating",
+                "likes"
+              ],
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviews fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "reviews": [
+                      {
+                        "_id": "64abc123def456789abc0001",
+                        "buyer": {
+                          "_id": "64abc123def456789abc1234",
+                          "name": "Shahzaib",
+                          "avatar": "https://res.cloudinary.com/..."
+                        },
+                        "rating": 5,
+                        "title": "Great product",
+                        "comment": "Really happy with this purchase.",
+                        "isVerifiedPurchase": true,
+                        "likes": [],
+                        "dislikes": [],
+                        "vendorReply": null,
+                        "createdAt": "2025-01-01T00:00:00.000Z"
+                      }
+                    ],
+                    "total": 42,
+                    "page": 1,
+                    "totalPages": 5
+                  },
+                  "message": "Reviews fetched"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/user": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Get current buyer's reviews",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviews fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": [
+                    {
+                      "_id": "64abc123def456789abc0001",
+                      "product": {
+                        "_id": "64abc123def456789abc1234",
+                        "name": "Laptop Pro X",
+                        "images": [
+                          "https://res.cloudinary.com/..."
+                        ]
+                      },
+                      "rating": 4,
+                      "title": "Good laptop",
+                      "comment": "Works well overall.",
+                      "createdAt": "2025-01-01T00:00:00.000Z"
+                    }
+                  ],
+                  "message": "Reviews fetched"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews": {
       "post": {
         "tags": [
-          "Orders"
+          "Reviews"
         ],
-        "summary": "Place a new order",
+        "summary": "Create a review (buyer only)",
+        "description": "Only buyers who have **paid** for the product can review it.\nOne review per product per buyer.\n",
         "security": [
           {
             "cookieAuth": []
@@ -1809,99 +4051,32 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "items",
-                  "shippingAddress",
-                  "paymentMethod"
+                  "product",
+                  "order",
+                  "rating"
                 ],
                 "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "required": [
-                        "product",
-                        "quantity"
-                      ],
-                      "properties": {
-                        "product": {
-                          "type": "string",
-                          "example": "664f1b2c9a8e4d001f3c7a11"
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "example": 2
-                        },
-                        "selectedVariants": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string"
-                          },
-                          "example": {
-                            "size": "42",
-                            "color": "Black"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "shippingAddress": {
-                    "type": "object",
-                    "required": [
-                      "fullName",
-                      "phone",
-                      "addressLine1",
-                      "city",
-                      "state",
-                      "postalCode",
-                      "country"
-                    ],
-                    "properties": {
-                      "fullName": {
-                        "type": "string",
-                        "example": "Ahmed Raza"
-                      },
-                      "phone": {
-                        "type": "string",
-                        "example": "03001234567"
-                      },
-                      "addressLine1": {
-                        "type": "string",
-                        "example": "House 12, Block B"
-                      },
-                      "addressLine2": {
-                        "type": "string",
-                        "example": "Near City Hospital"
-                      },
-                      "city": {
-                        "type": "string",
-                        "example": "Karachi"
-                      },
-                      "state": {
-                        "type": "string",
-                        "example": "Sindh"
-                      },
-                      "postalCode": {
-                        "type": "string",
-                        "example": "75500"
-                      },
-                      "country": {
-                        "type": "string",
-                        "example": "Pakistan"
-                      }
-                    }
-                  },
-                  "couponCode": {
+                  "product": {
                     "type": "string",
-                    "example": "SAVE20"
+                    "example": "64abc123def456789abc1234"
                   },
-                  "paymentMethod": {
+                  "order": {
                     "type": "string",
-                    "enum": [
-                      "stripe",
-                      "cod"
-                    ],
-                    "example": "stripe"
+                    "example": "64abc123def456789abc5678"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 5
+                  },
+                  "title": {
+                    "type": "string",
+                    "example": "Great product"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "example": "Really happy with this purchase."
                   }
                 }
               }
@@ -1910,16 +4085,289 @@
         },
         "responses": {
           "201": {
-            "description": "Order placed successfully",
+            "description": "Review submitted",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "clientSecret": {
-                      "type": "string",
-                      "description": "Stripe client secret (only for stripe payments)",
-                      "example": "pi_3OqX2t_secret_xyz"
+                "example": {
+                  "statusCode": 201,
+                  "data": {
+                    "_id": "64abc123def456789abc0001",
+                    "product": "64abc123def456789abc1234",
+                    "buyer": "64abc123def456789abc9999",
+                    "order": "64abc123def456789abc5678",
+                    "rating": 5,
+                    "title": "Great product",
+                    "comment": "Really happy with this purchase.",
+                    "isVerifiedPurchase": true,
+                    "isApproved": false
+                  },
+                  "message": "Review submitted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a verified purchase",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "data": null,
+                  "message": "You can only review products you have purchased"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already reviewed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 409,
+                  "data": null,
+                  "message": "You have already reviewed this product"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}": {
+      "patch": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Update own review (buyer only)",
+        "description": "Updating a review resets its approval status.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review updated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc0001",
+                    "rating": 4,
+                    "title": "Updated title",
+                    "comment": "Changed my mind slightly.",
+                    "isApproved": false
+                  },
+                  "message": "Review updated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Delete own review (buyer only)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Review deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}/like": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Like or dislike a review (buyer only)",
+        "description": "Toggling — calling again removes the like/dislike.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "like",
+                      "dislike"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Like/dislike toggled",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "liked": {
+                    "value": {
+                      "statusCode": 200,
+                      "data": {
+                        "likes": 14
+                      },
+                      "message": "Review liked"
+                    }
+                  },
+                  "unliked": {
+                    "value": {
+                      "statusCode": 200,
+                      "data": {
+                        "likes": 13
+                      },
+                      "message": "Like removed"
+                    }
+                  },
+                  "disliked": {
+                    "value": {
+                      "statusCode": 200,
+                      "data": {
+                        "dislikes": 3
+                      },
+                      "message": "Review disliked"
                     }
                   }
                 }
@@ -1927,357 +4375,389 @@
             }
           },
           "400": {
-            "description": "Invalid product, insufficient stock, or coupon error"
+            "description": "Invalid type",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 400,
+                  "data": null,
+                  "message": "Invalid like type"
+                }
+              }
+            }
           },
-          "422": {
-            "description": "Validation error"
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}/reply": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Reply to a review (vendor only)",
+        "description": "Only the vendor who owns the reviewed product can reply.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Thank you for your feedback! Glad you enjoyed it."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reply added",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc0001",
+                    "vendorReply": {
+                      "message": "Thank you for your feedback! Glad you enjoyed it.",
+                      "repliedAt": "2025-01-02T10:00:00.000Z"
+                    }
+                  },
+                  "message": "Reply added"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}/approve": {
+      "patch": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Approve or unapprove a review (admin only)",
+        "description": "Toggles `isApproved`. Only approved reviews appear in public listing.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approval toggled",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "approved": {
+                    "value": {
+                      "statusCode": 200,
+                      "data": {
+                        "_id": "64abc123def456789abc0001",
+                        "isApproved": true
+                      },
+                      "message": "Review approved"
+                    }
+                  },
+                  "unapproved": {
+                    "value": {
+                      "statusCode": 200,
+                      "data": {
+                        "_id": "64abc123def456789abc0001",
+                        "isApproved": false
+                      },
+                      "message": "Review unapproved"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/{id}/admin": {
+      "delete": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Delete any review (admin only)",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted by admin",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Review deleted by admin"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get current authenticated user",
+        "description": "Returns the current user's profile. Redis-cached for 30 days.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc1234",
+                    "name": "Shahzaib",
+                    "email": "shahzaib@example.com",
+                    "role": "customer",
+                    "avatar": "https://res.cloudinary.com/...",
+                    "isVerified": true,
+                    "isBanned": false,
+                    "createdAt": "2025-01-01T00:00:00.000Z"
+                  },
+                  "message": "User fetched successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "data": null,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "User not found"
+                }
+              }
+            }
           }
         }
       },
-      "get": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Get my orders",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "status",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "confirmed",
-                "processing",
-                "shipped",
-                "delivered",
-                "cancelled",
-                "refunded"
-              ]
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortBy",
-            "schema": {
-              "type": "string",
-              "default": "createdAt"
-            }
-          },
-          {
-            "in": "query",
-            "name": "order",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "desc"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Orders fetched"
-          }
-        }
-      }
-    },
-    "/orders/{id}": {
-      "get": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Get order by ID (buyer, vendor, or admin)",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order fetched"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Order not found"
-          }
-        }
-      }
-    },
-    "/orders/{id}/cancel": {
       "patch": {
         "tags": [
-          "Orders"
+          "User"
         ],
-        "summary": "Cancel an order (buyer)",
+        "summary": "Update current user profile",
+        "description": "Updates name, email, or avatar. All fields are optional.\n- If avatar is provided, old Cloudinary image is deleted and replaced.\n- Updated user is re-cached in Redis for 30 days.\n",
         "security": [
           {
             "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
+          "required": false,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "reason": {
+                  "name": {
                     "type": "string",
-                    "example": "Changed my mind"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Order cancelled"
-          },
-          "400": {
-            "description": "Cannot cancel order in current status"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Order not found"
-          }
-        }
-      }
-    },
-    "/orders/vendor": {
-      "get": {
-        "tags": [
-          "Orders - Vendor"
-        ],
-        "summary": "Get vendor's orders (only their items)",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "status",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "confirmed",
-                "processing",
-                "shipped",
-                "delivered",
-                "cancelled",
-                "refunded"
-              ]
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortBy",
-            "schema": {
-              "type": "string",
-              "default": "createdAt"
-            }
-          },
-          {
-            "in": "query",
-            "name": "order",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "desc"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Vendor orders fetched"
-          }
-        }
-      }
-    },
-    "/orders/admin": {
-      "get": {
-        "tags": [
-          "Orders - Admin"
-        ],
-        "summary": "Get all orders (admin)",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "status",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "confirmed",
-                "processing",
-                "shipped",
-                "delivered",
-                "cancelled",
-                "refunded"
-              ]
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "in": "query",
-            "name": "sortBy",
-            "schema": {
-              "type": "string",
-              "default": "createdAt"
-            }
-          },
-          {
-            "in": "query",
-            "name": "order",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "desc"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "All orders fetched"
-          }
-        }
-      }
-    },
-    "/orders/admin/{orderId}/status": {
-      "patch": {
-        "tags": [
-          "Orders - Admin"
-        ],
-        "summary": "Update order status (admin)",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "orderId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "status"
-                ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "cancelled",
-                      "delivered",
-                      "refunded"
-                    ],
-                    "example": "delivered"
+                    "example": "Shahzaib Khan"
                   },
-                  "reason": {
+                  "email": {
                     "type": "string",
-                    "example": "Delivered to customer"
+                    "format": "email",
+                    "example": "shahzaib@example.com"
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
                   }
                 }
               }
@@ -2286,23 +4766,96 @@
         },
         "responses": {
           "200": {
-            "description": "Order status updated"
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc1234",
+                    "name": "Shahzaib Khan",
+                    "email": "shahzaib@example.com",
+                    "role": "customer",
+                    "avatar": "https://res.cloudinary.com/...",
+                    "isVerified": true
+                  },
+                  "message": "User updated successfully"
+                }
+              }
+            }
           },
-          "400": {
-            "description": "Order already in this status"
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "data": null,
+                  "message": "Unauthorized"
+                }
+              }
+            }
           },
           "404": {
-            "description": "Order not found"
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "data": null,
+                  "message": "User not found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Delete current user account",
+        "description": "Permanently deletes the user account.\n- Clears access_token and refresh_token cookies.\n- Removes user from Redis cache.\n",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "Account deleted successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "data": null,
+                  "message": "Unauthorized"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/orders/{id}/vendor-status": {
-      "patch": {
+    "/admin/orders": {
+      "get": {
         "tags": [
-          "Orders - Vendor"
+          "Admin"
         ],
-        "summary": "Update item status for vendor's items",
+        "summary": "Get all orders with pagination (admin only)",
+        "description": "Redis-cached per page/limit.",
         "security": [
           {
             "cookieAuth": []
@@ -2310,51 +4863,164 @@
         ],
         "parameters": [
           {
-            "in": "path",
-            "name": "id",
-            "required": true,
+            "name": "page",
+            "in": "query",
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "status"
-                ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "confirmed",
-                      "processing",
-                      "shipped"
+        "responses": {
+          "200": {
+            "description": "Orders fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "orders": [
+                      {
+                        "_id": "64abc123def456789abc5678",
+                        "buyer": "64abc123def456789abc1234",
+                        "items": [
+                          {
+                            "product": "64abc123def456789abc9999",
+                            "quantity": 2,
+                            "price": 499.99
+                          }
+                        ],
+                        "totalAmount": 999.98,
+                        "paymentStatus": "paid",
+                        "orderStatus": "delivered",
+                        "createdAt": "2025-01-01T00:00:00.000Z"
+                      }
                     ],
-                    "example": "processing"
+                    "total": 540,
+                    "page": 1,
+                    "limit": 20,
+                    "totalPages": 27
                   },
-                  "note": {
-                    "type": "string",
-                    "example": "Packed and ready"
-                  }
+                  "message": "Orders fetched successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
                 }
               }
             }
           }
-        },
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all buyers with pagination (admin only)",
+        "description": "Redis-cached per page/limit. Includes active user count (active = updated in last 30 days).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Order status updated"
+            "description": "Users fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "users": [
+                      {
+                        "_id": "64abc123def456789abc1234",
+                        "name": "Shahzaib",
+                        "email": "shahzaib@example.com",
+                        "role": "buyer",
+                        "isVerified": true,
+                        "isBanned": false,
+                        "createdAt": "2025-01-01T00:00:00.000Z",
+                        "updatedAt": "2025-06-01T00:00:00.000Z"
+                      }
+                    ],
+                    "total": 200,
+                    "activeUsers": 45,
+                    "page": 1,
+                    "limit": 20,
+                    "totalPages": 10
+                  },
+                  "message": "Users fetched successfully"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
           },
           "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Order not found"
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden"
+                }
+              }
+            }
           }
         }
       }
@@ -2753,6 +5419,185 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get paginated notifications for current user",
+        "description": "Redis-cached for 5 minutes per user/page/limit. Includes unread count.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications fetched",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "notifications": [
+                      {
+                        "_id": "64abc123def456789abc0001",
+                        "recipient": "64abc123def456789abc1234",
+                        "type": "new_message",
+                        "title": "Admin replied to your ticket",
+                        "message": "Your order has been dispatched.",
+                        "isRead": false,
+                        "data": {
+                          "chatId": "64abc123def456789abc5678"
+                        },
+                        "createdAt": "2025-01-01T00:00:00.000Z"
+                      }
+                    ],
+                    "total": 85,
+                    "unreadCount": 12,
+                    "page": 1,
+                    "totalPages": 5
+                  },
+                  "message": "Notifications fetched"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark all notifications as read",
+        "description": "Invalidates the user's notification cache and bulk-updates all unread.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All notifications marked as read",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": null,
+                  "message": "All notifications marked as read"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark a single notification as read",
+        "description": "Invalidates the user's notification cache.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64abc123def456789abc0001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as read",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 200,
+                  "data": {
+                    "_id": "64abc123def456789abc0001",
+                    "isRead": true
+                  },
+                  "message": "Marked as read"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "statusCode": 404,
+                  "message": "Not Found"
                 }
               }
             }

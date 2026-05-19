@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/helpers';
-import { useGetAllUsersQuery, useBanVendorMutation } from '@store/api/adminApi';
+import { useGetAllUsersQuery } from '@store/api/adminApi';
 
 // Note: The admin banVendor mutation also works for banning any user since it's a generic ban toggle.
 // The backend's banVendor endpoint accepts any userId with role check, but for buyers
@@ -9,10 +9,8 @@ import { useGetAllUsersQuery, useBanVendorMutation } from '@store/api/adminApi';
 
 export const AdminPersonnelPage: React.FC = () => {
     const [search, setSearch] = React.useState('');
-    const [page, setPage] = React.useState(1);
 
     const { data, isLoading } = useGetAllUsersQuery();
-    const [banUser] = useBanVendorMutation(); // reuse same ban pattern
 
     const users: any[] = data?.data?.users ?? [];
     const total: number = data?.data?.total ?? 0;
@@ -24,10 +22,6 @@ export const AdminPersonnelPage: React.FC = () => {
             u.email?.toLowerCase().includes(search.toLowerCase())
         )
         : users;
-
-    const handleBan = async (id: string) => {
-        try { await banUser(id).unwrap(); } catch { }
-    };
 
     return (
         <div className="space-y-12">
@@ -110,19 +104,6 @@ export const AdminPersonnelPage: React.FC = () => {
                                 </span>
                             </div>
 
-                            <div className="w-40 flex justify-end gap-2">
-                                <button
-                                    onClick={() => handleBan(user._id)}
-                                    className={cn(
-                                        "px-3 py-1 border text-[9px] font-bold uppercase tracking-widest transition-all",
-                                        user.isBanned
-                                            ? "border-green-600/20 text-green-600 hover:bg-green-600 hover:text-white"
-                                            : "border-red-600/20 text-red-600 hover:bg-red-600 hover:text-white"
-                                    )}
-                                >
-                                    {user.isBanned ? 'Unban' : 'Ban'}
-                                </button>
-                            </div>
                         </div>
                     ))}
 

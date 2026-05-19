@@ -31,7 +31,6 @@
       "@pages/*": ["src/pages/*"],
       "@assets/*": ["src/assets/*"],
       "@utils/*": ["src/utils/*"],
-      "@mock/*": ["src/mock/*"]
     }
   },
   "include": ["src"]

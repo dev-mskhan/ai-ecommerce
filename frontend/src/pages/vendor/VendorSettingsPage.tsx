@@ -4,6 +4,7 @@ import { Camera, Save, Shield, Store, Phone, MapPin, Plus, Trash2, Check, Loader
 import { cn } from '@/utils/helpers';
 import { CustomDropdown } from '@/components/ui/CustomDropdown';
 import { useGetVendorProfileQuery, useUpdateVendorMutation } from '@/store/api/vendorApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 interface Address {
   line: string;
@@ -32,23 +33,12 @@ const CITY_OPTIONS = [
   { label: 'Quetta', value: 'quetta' },
 ];
 
-const NOTIFICATION_PREFS = [
-  { key: 'newOrders', label: 'New Order Alerts', desc: 'Get notified when an order is placed.' },
-  { key: 'lowStock', label: 'Low Stock Warnings', desc: 'Alert when a product is running low.' },
-  { key: 'salesReports', label: 'Weekly Sales Report', desc: 'Weekly summary of your activity.' },
-];
-
 export const VendorSettingsPage: React.FC = () => {
   const { data: profileData, isLoading: profileLoading } = useGetVendorProfileQuery();
   const [updateVendor, { isLoading: saving }] = useUpdateVendorMutation();
 
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
   const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
-  const [notifications, setNotifications] = React.useState<Record<string, boolean>>({
-    newOrders: true,
-    lowStock: true,
-    salesReports: false,
-  });
   const [successMsg, setSuccessMsg] = React.useState<string | null>(null);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
@@ -85,9 +75,9 @@ export const VendorSettingsPage: React.FC = () => {
     }
   }, [profile, reset]);
 
-  const setDefault = (index: number) => {
+  const setDefault = (targetIdx: number) => {
     fields.forEach((_, i) => {
-      update(i, { ...fields[i], isDefault: i === index });
+      update(i, { ...fields[i], isDefault: i === targetIdx });
     });
   };
 
@@ -106,22 +96,14 @@ export const VendorSettingsPage: React.FC = () => {
     fd.append('storeName', values.storeName);
     fd.append('storeDescription', values.storeDescription ?? '');
     fd.append('phoneNumber', values.phoneNumber);
-    values.addresses.forEach((addr, i) => {
-      fd.append(`addresses[${i}][line]`, addr.line);
-      fd.append(`addresses[${i}][city]`, addr.city);
-      fd.append(`addresses[${i}][state]`, addr.state);
-      fd.append(`addresses[${i}][postalCode]`, addr.postalCode ?? '');
-      fd.append(`addresses[${i}][country]`, addr.country || 'Pakistan');
-      fd.append(`addresses[${i}][isDefault]`, String(addr.isDefault));
-    });
+    fd.append('addresses', JSON.stringify(values.addresses));
     if (avatarFile) fd.append('avatar', avatarFile);
 
-    try {
-      await updateVendor(fd).unwrap();
-      setSuccessMsg('Profile updated successfully.');
-    } catch (err: any) {
-      setErrorMsg(err?.data?.message ?? 'Update failed. Please try again.');
-    }
+    await riftToast.promise(updateVendor(fd).unwrap(), {
+      loading: 'Saving changes...',
+      success: 'Profile updated successfully.',
+      error: 'Failed to update profile.',
+    });
   };
 
   if (profileLoading) {
@@ -327,7 +309,7 @@ export const VendorSettingsPage: React.FC = () => {
                     <label className="flex items-center gap-3 cursor-pointer group pt-1">
                       <button
                         type="button"
-                        onClick={() => setDefault(idx)}
+                        onClick={() => setDefault(idx)}   // pass idx here
                         className={cn(
                           'w-5 h-5 flex items-center justify-center transition-all',
                           field.isDefault ? 'bg-[#1A1A1A] text-white' : 'border border-[#1A1A1A]/20',
@@ -348,68 +330,6 @@ export const VendorSettingsPage: React.FC = () => {
                   className="w-full py-4 border border-dashed border-[#1A1A1A]/20 text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:border-[#1A1A1A] transition-all flex items-center justify-center gap-2"
                 >
                   <Plus size={13} /> Add Address
-                </button>
-              </div>
-            </section>
-
-            {/* Notifications */}
-            <section className="space-y-8">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 border-b border-[#1A1A1A]/5 pb-3">
-                Notifications
-              </h3>
-              <div className="space-y-3">
-                {NOTIFICATION_PREFS.map((pref) => (
-                  <div
-                    key={pref.key}
-                    className="flex items-center justify-between p-5 bg-[#FDFCF8] border border-[#1A1A1A]/5 group hover:border-[#1A1A1A]/20 transition-all"
-                  >
-                    <div>
-                      <p className="text-sm font-bold tracking-tight mb-0.5">{pref.label}</p>
-                      <p className="text-[9px] font-mono opacity-40 uppercase">{pref.desc}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setNotifications((prev) => ({ ...prev, [pref.key]: !prev[pref.key] }))}
-                      className={cn(
-                        'w-11 h-6 rounded-full relative transition-all duration-300',
-                        notifications[pref.key] ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A]/10',
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'absolute top-1 w-4 h-4 rounded-full transition-all duration-300 bg-[#FDFCF8]',
-                          notifications[pref.key] ? 'left-6' : 'left-1',
-                        )}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Security */}
-            <section className="space-y-8">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-40 border-b border-[#1A1A1A]/5 pb-3">
-                Account Security
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <button
-                  type="button"
-                  className="flex items-center justify-between p-5 bg-[#FDFCF8] border border-red-600/10 text-red-600 hover:bg-red-600 hover:text-[#FDFCF8] transition-all"
-                >
-                  <div className="text-left">
-                    <p className="text-[10px] font-bold uppercase tracking-widest">Change Password</p>
-                    <p className="text-[8px] font-mono opacity-60 uppercase mt-0.5">Update your credentials</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center justify-between p-5 bg-red-600/5 border border-red-600/20 text-red-700 hover:bg-red-600 hover:text-[#FDFCF8] transition-all"
-                >
-                  <div className="text-left">
-                    <p className="text-[10px] font-bold uppercase tracking-widest italic">Delete Account</p>
-                    <p className="text-[8px] font-mono opacity-60 uppercase mt-0.5">Permanently close your store</p>
-                  </div>
                 </button>
               </div>
             </section>

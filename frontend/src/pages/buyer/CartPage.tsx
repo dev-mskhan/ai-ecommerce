@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import { useCouponActions } from '@/store/hooks/useCoupon';
 import { riftToast } from '@/components/common/toastContainer';
+import { useAppSelector } from '@/store';
 
 export const CartPage: React.FC = () => {
   const { items, removeItem, updateQuantity, getTotal } = useCartStore();
   const [coupon, setCoupon] = React.useState('');
   const [appliedDiscount, setAppliedDiscount] = React.useState(0);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
 
   const subtotal = getTotal();
@@ -21,7 +23,6 @@ export const CartPage: React.FC = () => {
   const { apply } = useCouponActions();
   const [applyCoupon, { isLoading: isApplying, error, isSuccess, data }] = apply;
 
-  console.log(items);
   const handleApplyCoupon = async () => {
     if (!coupon) {
       riftToast.error("Please enter a coupon code");
@@ -78,7 +79,9 @@ export const CartPage: React.FC = () => {
                   <p className="text-[9px] font-mono opacity-40 uppercase tracking-widest">{item.vendorName}</p>
                   <h3 className="text-xl font-heading font-medium italic">{item.name}</h3>
                   {item.variant && <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Spec: {item.variant}</p>}
-                  <p className="text-lg font-bold tracking-tight">{formatPrice(item.discountPrice * item.quantity)}</p>
+                  <p className="text-lg font-bold tracking-tight">
+                    {formatPrice((item.discountPrice ?? item.price) * item.quantity)}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-12">
@@ -165,10 +168,10 @@ export const CartPage: React.FC = () => {
 
             <div className="space-y-4">
               <Button
-                onClick={() => navigate('/checkout')}
+                onClick={() => isAuthenticated ? navigate('/checkout') : navigate('/login', { state: { from: '/cart' } })}
                 className="w-full h-16 text-[10px] font-bold uppercase tracking-[0.4em]"
               >
-                Proceed to Checkout
+                {isAuthenticated ? "Proceed to Checkout" : "Login to Checkout"}
                 <ArrowRight size={16} className="ml-4" />
               </Button>
               <Link to="/category/all-items" className="block text-center pt-4">

@@ -49,7 +49,8 @@ export const ProductDetailPage: React.FC = () => {
     addItemToCart({
       id: _id,
       name,
-      price: discountPrice ?? price,
+      price: price,
+      discountPrice: discountPrice,
       slug,
       images,
       categoryName: category?.name ?? '',

@@ -3,10 +3,10 @@ import { ProductCard } from '@/components/buyer/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { useProducts } from '@/store/hooks/useProduct';
 import { Link } from 'react-router-dom';
+import { PageSkeleton } from '@/components/common/PageSkeleton';
 
 export const FlashSale = () => {
-    const { data, isLoading, isSuccess } = useProducts({ limit: "6", sort: "rating" });
-    console.log(data);
+    const { data, isLoading, isSuccess, isError } = useProducts({ limit: "6", sort: "rating" });
     const products = data?.data?.products;
     return (
         <section>
@@ -29,14 +29,14 @@ export const FlashSale = () => {
                     </Link>
                 </div>
                 <div className="lg:col-span-9">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {(isLoading || isError) ? <PageSkeleton /> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {isSuccess && products?.map(product => {
                             const discount = Math.round(((product.price - product.discountPrice) / product.price) * 100);
                             if (discount > 0) {
                                 return <ProductCard key={product._id} product={{ ...product, discount }} />
                             }
                         })}
-                    </div>
+                    </div>}
                 </div>
             </div>
         </section>

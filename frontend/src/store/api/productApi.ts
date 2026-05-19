@@ -59,19 +59,19 @@ export const productApi = createApi({
             invalidatesTags: (_, __, id) => ["VendorProducts", { type: "Product", id }],
         }),
 
-        updateStock: builder.mutation<any, { id: string; quantity: number }>({
+        updateStock: builder.mutation<any, { id: string; stock: number }>({
             query: ({ id, ...body }) => ({ url: `/products/vendor/${id}/stock`, method: "PATCH", body }),
             invalidatesTags: (_, __, { id }) => [{ type: "Product", id }, "VendorProducts"],
         }),
 
         adminDeleteProduct: builder.mutation<any, string>({
             query: (id) => ({ url: `/products/admin/${id}`, method: "DELETE" }),
-            invalidatesTags: ["Products", "VendorProducts"],
+            invalidatesTags: ["Products"],
         }),
 
         toggleFeaturedProduct: builder.mutation<any, string>({
             query: (id) => ({ url: `/products/admin/${id}/feature`, method: "PATCH" }),
-            invalidatesTags: (_, __, id) => ["Products", { type: "Product", id }],
+            invalidatesTags: ["Products"],
         }),
     }),
 });

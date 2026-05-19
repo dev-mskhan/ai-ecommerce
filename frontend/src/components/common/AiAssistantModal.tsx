@@ -4,7 +4,6 @@ import { Send, Sparkles, User, Bot, X, Search, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/helpers';
-import { products } from '@/mock/products';
 import { useChatActions, useChats } from '@/store/hooks/useChat';
 import { useAppSelector } from '@/store';
 
@@ -12,7 +11,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  recommendations?: typeof products;
+  recommendations?: any[];
 }
 
 interface AiAssistantModalProps {

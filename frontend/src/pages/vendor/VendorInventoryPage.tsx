@@ -1,14 +1,16 @@
 import React from 'react';
-import { AlertTriangle, ArrowUpRight, ArrowDownRight, Edit2, Loader2, AlertCircle } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, ArrowDownRight, Loader2, AlertCircle } from 'lucide-react';
 import { cn, formatPrice } from '@/utils/helpers';
-import { useGetInventoryStatusQuery, useUpdateStockMutation } from '@/store/api/vendorApi';
+import { useGetInventoryStatusQuery } from '@/store/api/vendorApi';
 import { useUpdateStockMutation as useProductStockMutation } from '@/store/api/productApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 type FilterType = 'ALL' | 'LOW' | 'OUT';
 
 export const VendorInventoryPage: React.FC = () => {
   const [filter, setFilter] = React.useState<FilterType>('ALL');
-  const [pendingStock, setPendingStock] = React.useState<Record<string, number>>({});
+  const [pendingIds, setPendingIds] = React.useState<Set<string>>(new Set());
+  const inputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
 
   const { data, isLoading, isError } = useGetInventoryStatusQuery();
   const [updateStock, { isLoading: stockUpdating }] = useProductStockMutation();
@@ -24,25 +26,49 @@ export const VendorInventoryPage: React.FC = () => {
   const filtered = filter === 'ALL'
     ? allProducts
     : filter === 'LOW'
-    ? inventoryData.low_stock
-    : inventoryData.out_of_stock;
+      ? inventoryData.low_stock
+      : inventoryData.out_of_stock;
 
-  const getDisplayStock = (product: any) =>
-    pendingStock[product._id] !== undefined ? pendingStock[product._id] : product.stock ?? 0;
-
-  const adjustPending = (id: string, currentStock: number, delta: number) => {
-    setPendingStock((prev) => ({
-      ...prev,
-      [id]: Math.max(0, (prev[id] ?? currentStock) + delta),
-    }));
+  const getInputValue = (id: string) => {
+    const el = inputRefs.current[id];
+    if (!el) return null;
+    const parsed = parseInt(el.value, 10);
+    return isNaN(parsed) || parsed < 0 ? null : parsed;
   };
 
-  const saveStock = async (id: string) => {
-    if (pendingStock[id] === undefined) return;
-    await updateStock({ id, quantity: pendingStock[id] }).unwrap();
-    setPendingStock((prev) => {
-      const next = { ...prev };
-      delete next[id];
+  const adjustInput = (id: string, currentStock: number, delta: number) => {
+    const el = inputRefs.current[id];
+    if (!el) return;
+    const current = parseInt(el.value, 10);
+    const base = isNaN(current) ? currentStock : current;
+    el.value = String(Math.max(0, base + delta));
+    setPendingIds((prev) => new Set(prev).add(id));
+  };
+
+  const handleInputChange = (id: string) => {
+    setPendingIds((prev) => new Set(prev).add(id));
+  };
+
+  const saveStock = async (id: string, currentStock: number) => {
+    const qty = getInputValue(id);
+    if (qty === null) {
+      // revert input to current stock
+      const el = inputRefs.current[id];
+      if (el) el.value = String(currentStock);
+      riftToast.error('Enter a valid stock number.');
+      return;
+    }
+    await riftToast.promise(
+      updateStock({ id, stock: qty }).unwrap(),
+      {
+        loading: 'Updating stock...',
+        success: 'Stock updated!',
+        error: 'Failed to update stock.',
+      },
+    );
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
       return next;
     });
   };
@@ -58,7 +84,6 @@ export const VendorInventoryPage: React.FC = () => {
           </h1>
         </div>
 
-        {/* Summary pills */}
         <div className="flex items-center gap-3">
           {[
             { label: 'All', key: 'ALL', count: allProducts.length },
@@ -71,15 +96,12 @@ export const VendorInventoryPage: React.FC = () => {
               className={cn(
                 'px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2',
                 filter === key ? 'bg-[#1A1A1A] text-[#FDFCF8]' : 'bg-[#1A1A1A]/5 opacity-50 hover:opacity-100',
-                key === 'OUT' && count > 0 ? 'text-red-600' : '',
+                key === 'OUT' && count > 0 && filter !== key ? 'text-red-600' : '',
               )}
             >
               {label}
               {count > 0 && (
-                <span className={cn(
-                  'text-[8px] font-mono px-1.5 py-0.5',
-                  filter === key ? 'bg-white/20' : 'bg-[#1A1A1A]/10',
-                )}>
+                <span className={cn('text-[8px] font-mono px-1.5 py-0.5', filter === key ? 'bg-white/20' : 'bg-[#1A1A1A]/10')}>
                   {count}
                 </span>
               )}
@@ -99,13 +121,12 @@ export const VendorInventoryPage: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-px bg-[#1A1A1A]/10 border border-[#1A1A1A]/10 overflow-hidden">
-          {/* Header */}
           <div className="bg-[#FDFCF8] p-5 lg:p-7 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.3em] opacity-40 border-b border-[#1A1A1A]/5">
             <div className="w-14">Image</div>
             <div className="flex-1 px-6">Product Name</div>
             <div className="w-24 text-center">Price</div>
             <div className="w-32 text-center">Stock Level</div>
-            <div className="w-52" />
+            <div className="w-64" />
           </div>
 
           {filtered.length === 0 ? (
@@ -114,10 +135,10 @@ export const VendorInventoryPage: React.FC = () => {
             </div>
           ) : (
             filtered.map((item: any) => {
-              const displayStock = getDisplayStock(item);
-              const hasPending = pendingStock[item._id] !== undefined;
-              const isLow = displayStock > 0 && displayStock <= 10;
-              const isOut = displayStock === 0;
+              const currentStock: number = item.stock ?? 0;
+              const hasPending = pendingIds.has(item._id);
+              const isLow = currentStock > 0 && currentStock <= 10;
+              const isOut = currentStock === 0;
 
               return (
                 <div
@@ -148,13 +169,8 @@ export const VendorInventoryPage: React.FC = () => {
                   <div className="w-32 flex flex-col items-center flex-shrink-0">
                     <div className="flex items-center gap-2">
                       {(isLow || isOut) && <AlertTriangle size={13} className="text-red-600" />}
-                      <span
-                        className={cn(
-                          'text-xl font-bold tracking-tighter',
-                          isOut ? 'text-red-700' : isLow ? 'text-amber-700' : '',
-                        )}
-                      >
-                        {displayStock}
+                      <span className={cn('text-xl font-bold tracking-tighter', isOut ? 'text-red-700' : isLow ? 'text-amber-700' : '')}>
+                        {currentStock}
                       </span>
                     </div>
                     {isOut && <span className="text-[8px] font-bold text-red-600 uppercase tracking-widest mt-0.5">Out of stock</span>}
@@ -162,17 +178,24 @@ export const VendorInventoryPage: React.FC = () => {
                   </div>
 
                   {/* Controls */}
-                  <div className="w-52 flex justify-end gap-2 flex-shrink-0">
+                  <div className="w-64 flex justify-end items-center gap-2 flex-shrink-0">
                     <div className="flex bg-[#1A1A1A]/5 border border-[#1A1A1A]/5">
                       <button
-                        onClick={() => adjustPending(item._id, item.stock, -1)}
+                        onClick={() => adjustInput(item._id, currentStock, -1)}
                         className="w-9 h-9 flex items-center justify-center hover:bg-[#1A1A1A] hover:text-[#FDFCF8] transition-all border-r border-[#1A1A1A]/10"
                       >
                         <ArrowDownRight size={13} />
                       </button>
-                      <div className="w-9 h-9 flex items-center justify-center text-[9px] font-bold opacity-40">Qty</div>
+                      <input
+                        ref={(el) => { inputRefs.current[item._id] = el; }}
+                        type="number"
+                        min={0}
+                        defaultValue={currentStock}
+                        onChange={() => handleInputChange(item._id)}
+                        className="w-14 h-9 text-center text-[11px] font-bold bg-transparent outline-none border-x border-[#1A1A1A]/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <button
-                        onClick={() => adjustPending(item._id, item.stock, 1)}
+                        onClick={() => adjustInput(item._id, currentStock, 1)}
                         className="w-9 h-9 flex items-center justify-center hover:bg-[#1A1A1A] hover:text-[#FDFCF8] transition-all"
                       >
                         <ArrowUpRight size={13} />
@@ -181,17 +204,13 @@ export const VendorInventoryPage: React.FC = () => {
 
                     {hasPending && (
                       <button
-                        onClick={() => saveStock(item._id)}
+                        onClick={() => saveStock(item._id, currentStock)}
                         disabled={stockUpdating}
                         className="px-3 h-9 bg-[#1A1A1A] text-[#FDFCF8] text-[9px] font-bold uppercase tracking-widest hover:opacity-80 transition-all disabled:opacity-40 whitespace-nowrap"
                       >
                         {stockUpdating ? '...' : 'Save'}
                       </button>
                     )}
-
-                    <button className="w-9 h-9 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 transition-all">
-                      <Edit2 size={13} />
-                    </button>
                   </div>
                 </div>
               );

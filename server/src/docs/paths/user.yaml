@@ -1,0 +1,130 @@
+# ─── Get Current User ─────────────────────────────────────────────
+get-current-user:
+  get:
+    tags: [User]
+    summary: Get current authenticated user
+    description: Returns the current user's profile. Redis-cached for 30 days.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: User fetched successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                name: "Shahzaib"
+                email: "shahzaib@example.com"
+                role: "customer"
+                avatar: "https://res.cloudinary.com/..."
+                isVerified: true
+                isBanned: false
+                createdAt: "2025-01-01T00:00:00.000Z"
+              message: "User fetched successfully"
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              data: null
+              message: "Unauthorized"
+      '404':
+        description: User not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "User not found"
+
+# ─── Update Current User ──────────────────────────────────────────
+update-current-user:
+  patch:
+    tags: [User]
+    summary: Update current user profile
+    description: |
+      Updates name, email, or avatar. All fields are optional.
+      - If avatar is provided, old Cloudinary image is deleted and replaced.
+      - Updated user is re-cached in Redis for 30 days.
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: false
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "Shahzaib Khan"
+              email:
+                type: string
+                format: email
+                example: "shahzaib@example.com"
+              avatar:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: User updated successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                name: "Shahzaib Khan"
+                email: "shahzaib@example.com"
+                role: "customer"
+                avatar: "https://res.cloudinary.com/..."
+                isVerified: true
+              message: "User updated successfully"
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              data: null
+              message: "Unauthorized"
+      '404':
+        description: User not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "User not found"
+
+# ─── Delete Account ───────────────────────────────────────────────
+delete-account:
+  delete:
+    tags: [User]
+    summary: Delete current user account
+    description: |
+      Permanently deletes the user account.
+      - Clears access_token and refresh_token cookies.
+      - Removes user from Redis cache.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Account deleted successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Account deleted successfully"
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            example:
+              statusCode: 401
+              data: null
+              message: "Unauthorized"

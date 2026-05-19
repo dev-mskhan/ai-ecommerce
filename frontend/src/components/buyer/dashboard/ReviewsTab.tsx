@@ -4,7 +4,6 @@ import { useUserReviews } from '@store/hooks/useReview';
 
 export const ReviewsTab = () => {
     const { data: reviews = [], isLoading, isError } = useUserReviews();
-    console.log(reviews)
     if (isLoading) return <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Loading reviews...</p>;
     if (isError) return <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Failed to load reviews.</p>;
 

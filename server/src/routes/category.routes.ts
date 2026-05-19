@@ -20,8 +20,8 @@ router.get("/", getAllCategories);
 router.get("/:id", getCategoryById);
 router.get("/slug/:slug", getCategoryBySlug);
 
-router.post("/", authHandler, roleCheck("admin"), parseFormData("categories", true), validateRequest(createCategorySchema, "body"), createCategory);
-router.patch("/:id", authHandler, roleCheck("admin"), parseFormData("categories", true), validateRequest(updateCategorySchema, "body"), updateCategory);
+router.post("/", authHandler, roleCheck("admin"), parseFormData("images", true), validateRequest(createCategorySchema, "body"), createCategory);
+router.patch("/:id", authHandler, roleCheck("admin"), parseFormData("images", true), validateRequest(updateCategorySchema, "body"), updateCategory);
 router.delete("/:id", authHandler, roleCheck("admin"), deleteCategory);
 router.patch("/:id/toggle", authHandler, roleCheck("admin"), toggleCategoryStatus);
 

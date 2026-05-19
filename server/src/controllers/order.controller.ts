@@ -87,6 +87,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
             buyer: buyerId,
             items: orderItems,
             shippingAddress: body.shippingAddress,
+            phone: body.phone,
             subtotal,
             discount,
             shippingCost,
@@ -202,7 +203,7 @@ export const getOrderById = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
-    const { orderId } = req.params;
+    const { id } = req.params;
     const io: Server = req.app.get("io");
     const { status, reason }: { status: "cancelled" | "delivered" | "refunded"; reason?: string } = req.body;
 
@@ -210,7 +211,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
     session.startTransaction();
 
     try {
-        const order = await Order.findById(orderId).session(session);
+        const order = await Order.findById(id).session(session);
         if (!order) throw new ApiError(404, "Order not found");
         if (order.status === status) throw new ApiError(400, `Order is already ${status}`);
 
@@ -270,6 +271,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: Request, res: Res
 
         return res.json(new ApiResponse(200, order, `Order ${status}`));
     } catch (err) {
+        console.log(err);
         await session.abortTransaction();
         throw err;
     } finally {
@@ -301,7 +303,7 @@ export const vendorUpdateOrderStatus = asyncHandler(async (req: Request, res: Re
     else order.status = "processing";
 
     order.statusHistory.push({ status: order.status, changedAt: new Date(), note });
-    await order.save();
+    await order.save({ validateModifiedOnly: true });
 
     // Emit to buyer
     await emitOrderStatusUpdate(io, {

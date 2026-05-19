@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, Star, Eye, Trash2 } from 'lucide-react';
 import { cn, formatPrice } from '@/utils/helpers';
 import { useGetAllProductsQuery, useAdminDeleteProductMutation, useToggleFeaturedProductMutation } from '@store/api/productApi';
+import { riftToast } from '@/components/common/toastContainer';
 
 export const AdminInventoryPage: React.FC = () => {
     const [page, setPage] = React.useState(1);
@@ -14,12 +15,25 @@ export const AdminInventoryPage: React.FC = () => {
     const total: number = data?.data?.total ?? 0;
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Remove this product permanently?')) return;
-        try { await adminDelete(id).unwrap(); } catch { }
+        await riftToast.promise(
+            adminDelete(id).unwrap(),
+            {
+                loading: 'Removing Product...',
+                success: 'Product Removed Successfully!',
+                error: 'Failed to remove product',
+            }
+        )
     };
 
     const handleFeature = async (id: string) => {
-        try { await toggleFeatured(id).unwrap(); } catch { }
+        await riftToast.promise(
+            toggleFeatured(id).unwrap(),
+            {
+                loading: 'Toggling Featured...',
+                success: 'Featured Toggled Successfully!',
+                error: 'Failed to toggle featured',
+            }
+        )
     };
 
     return (
@@ -101,9 +115,6 @@ export const AdminInventoryPage: React.FC = () => {
                                         )}
                                     >
                                         <Star size={14} />
-                                    </button>
-                                    <button className="w-10 h-10 border border-[#1A1A1A]/10 flex items-center justify-center opacity-40 hover:opacity-100 transition-all">
-                                        <Eye size={14} />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(item._id)}

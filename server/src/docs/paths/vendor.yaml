@@ -1,0 +1,391 @@
+# ─── Upgrade to Vendor ───────────────────────────────────────────
+upgrade-to-vendor:
+  post:
+    tags: [Vendor]
+    summary: Upgrade buyer account to vendor
+    description: Submits a vendor application. Requires buyer role. Awaits admin approval.
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [storeName, phoneNumber, addresses]
+            properties:
+              storeName:
+                type: string
+                example: "Shahzaib's Store"
+              storeDescription:
+                type: string
+                example: "Premium quality products"
+              phoneNumber:
+                type: string
+                example: "+923001234567"
+              addresses:
+                type: string
+                description: JSON stringified array of addresses
+                example: '[{"street":"123 Main St","city":"Karachi","country":"PK"}]'
+              avatar:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Application submitted successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Vendor application submitted. Awaiting admin approval."
+      '403':
+        description: Not a buyer
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              data: null
+              message: "Access denied"
+      '409':
+        description: Already a vendor
+        content:
+          application/json:
+            example:
+              statusCode: 409
+              data: null
+              message: "Already a vendor"
+
+# ─── Update Vendor Profile ────────────────────────────────────────
+update-vendor:
+  patch:
+    tags: [Vendor]
+    summary: Update vendor profile
+    security:
+      - cookieAuth: []
+    requestBody:
+      required: false
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              storeName:
+                type: string
+                example: "Updated Store Name"
+              storeDescription:
+                type: string
+                example: "Updated description"
+              phoneNumber:
+                type: string
+                example: "+923001234567"
+              addresses:
+                type: string
+                description: JSON stringified array of addresses
+              avatar:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Vendor profile updated
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data: null
+              message: "Vendor profile updated successfully."
+      '403':
+        description: Not a vendor
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              data: null
+              message: "Not a vendor"
+      '404':
+        description: User not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "User not found"
+
+# ─── Get Vendor Profile ───────────────────────────────────────────
+get-vendor-profile:
+  get:
+    tags: [Vendor]
+    summary: Get current vendor profile
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Vendor profile fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                name: "Shahzaib"
+                email: "shahzaib@example.com"
+                role: "vendor"
+                storeName: "Shahzaib's Store"
+                storeDescription: "Premium products"
+                storeAvatar: "https://res.cloudinary.com/..."
+                phoneNumber: "+923001234567"
+                isApproved: true
+                isBanned: false
+              message: "Profile fetched successfully"
+
+# ─── Analytics: Dashboard ─────────────────────────────────────────
+analytics-dashboard:
+  get:
+    tags: [Vendor - Analytics]
+    summary: Get vendor dashboard stats
+    description: Returns net/gross revenue, total orders, pending orders, total products. Cached for 5 minutes.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Dashboard stats fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                netRevenue: 47500
+                grossRevenue: 50000
+                totalOrders: 120
+                pendingOrders: 8
+                totalProducts: 34
+              message: "Dashboard stats fetched successfully"
+
+# ─── Analytics: Revenue ───────────────────────────────────────────
+analytics-revenue:
+  get:
+    tags: [Vendor - Analytics]
+    summary: Get monthly revenue analytics
+    description: Returns monthly breakdown of gross/net revenue and order count. Cached for 5 minutes.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Revenue analytics fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id:
+                    month: 4
+                    year: 2025
+                  grossRevenue: 25000
+                  netRevenue: 23750
+                  orderCount: 60
+                - _id:
+                    month: 5
+                    year: 2025
+                  grossRevenue: 25000
+                  netRevenue: 23750
+                  orderCount: 60
+              message: "Revenue analytics fetched successfully"
+
+# ─── Analytics: Sales Report ──────────────────────────────────────
+analytics-sales:
+  get:
+    tags: [Vendor - Analytics]
+    summary: Get product sales report
+    description: Returns per-product sales breakdown sorted by revenue. Cached for 5 minutes.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Sales report fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc1234"
+                  productName: "Wireless Headphones"
+                  productImage: "https://res.cloudinary.com/..."
+                  totalQuantitySold: 45
+                  grossRevenue: 22500
+                  netRevenue: 21375
+                  orderCount: 38
+              message: "Sales report fetched successfully"
+
+# ─── Analytics: Inventory ─────────────────────────────────────────
+analytics-inventory:
+  get:
+    tags: [Vendor - Analytics]
+    summary: Get inventory status
+    description: Returns products grouped into out_of_stock, low_stock, and healthy. Cached for 5 minutes.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Inventory status fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                out_of_stock:
+                  - _id: "64abc123def456789abc1234"
+                    name: "USB Hub"
+                    stock: 0
+                    price: 1500
+                    images: "https://res.cloudinary.com/..."
+                low_stock:
+                  - _id: "64abc123def456789abc1235"
+                    name: "Mechanical Keyboard"
+                    stock: 4
+                    price: 8500
+                    images: "https://res.cloudinary.com/..."
+                healthy:
+                  - _id: "64abc123def456789abc1236"
+                    name: "Wireless Mouse"
+                    stock: 120
+                    price: 2500
+                    images: "https://res.cloudinary.com/..."
+              message: "Inventory status fetched successfully"
+
+# ─── Analytics: Top Products ──────────────────────────────────────
+analytics-top-products:
+  get:
+    tags: [Vendor - Analytics]
+    summary: Get top 5 products by revenue
+    description: Returns top 5 best-selling products with ratings and slug. Cached for 5 minutes.
+    security:
+      - cookieAuth: []
+    responses:
+      '200':
+        description: Top products fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                - _id: "64abc123def456789abc1234"
+                  productName: "Wireless Headphones"
+                  productImage: "https://res.cloudinary.com/..."
+                  totalQuantitySold: 45
+                  grossRevenue: 22500
+                  netRevenue: 21375
+                  orderCount: 38
+                  product:
+                    ratings: 4.5
+                    slug: "wireless-headphones"
+              message: "Top products fetched successfully"
+
+# ─── Reviews ──────────────────────────────────────────────────────
+vendor-reviews:
+  get:
+    tags: [Vendor - Reviews]
+    summary: Get all reviews for vendor's products
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 1
+        example: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 20
+        example: 20
+    responses:
+      '200':
+        description: Reviews fetched
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                reviews:
+                  - _id: "64abc123def456789abc1234"
+                    rating: 5
+                    comment: "Excellent product!"
+                    buyer:
+                      name: "John Doe"
+                      avatar: "https://res.cloudinary.com/..."
+                    product:
+                      name: "Wireless Headphones"
+                      slug: "wireless-headphones"
+                      images: ["https://res.cloudinary.com/..."]
+                    vendorReply: null
+                    createdAt: "2025-05-01T10:00:00.000Z"
+                total: 42
+                page: 1
+                limit: 20
+                totalPages: 3
+              message: "Reviews fetched successfully"
+
+reply-to-review:
+  patch:
+    tags: [Vendor - Reviews]
+    summary: Reply to a product review
+    description: Vendor can reply once per review. Subsequent attempts return 400.
+    security:
+      - cookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "64abc123def456789abc1234"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+                example: "Thank you for your feedback!"
+    responses:
+      '200':
+        description: Reply posted successfully
+        content:
+          application/json:
+            example:
+              statusCode: 200
+              data:
+                _id: "64abc123def456789abc1234"
+                vendorReply:
+                  message: "Thank you for your feedback!"
+                  repliedAt: "2025-05-19T10:00:00.000Z"
+              message: "Reply posted successfully"
+      '400':
+        description: Already replied
+        content:
+          application/json:
+            example:
+              statusCode: 400
+              data: null
+              message: "You have already replied to this review"
+      '403':
+        description: Not your product's review
+        content:
+          application/json:
+            example:
+              statusCode: 403
+              data: null
+              message: "You are not authorized to reply to this review"
+      '404':
+        description: Review not found
+        content:
+          application/json:
+            example:
+              statusCode: 404
+              data: null
+              message: "Review not found"
