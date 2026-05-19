@@ -20,7 +20,7 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
