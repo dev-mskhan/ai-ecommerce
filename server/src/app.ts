@@ -22,6 +22,7 @@ import { Server } from "socket.io";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
+//@ts-ignore
 import xss from 'xss-clean';
 
 const __filename = fileURLToPath(import.meta.url);
