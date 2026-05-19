@@ -4,8 +4,88 @@ info:
   title: Multi-Vendor E-Commerce API
   version: 1.0.0
   description: |
-    ## Authentication
-    This API uses HTTP-only signed cookies for auth — not Authorization headers.
+    ## Authentication Flow
+
+    This API uses **HTTP-only signed cookies** for authentication — not Authorization headers.
+
+    ### Key Features:
+    - **Secure Token Storage**: Access and refresh tokens are stored in signed HTTP-only cookies
+    - **Token Rotation**: Refresh tokens are rotated on each refresh for enhanced security
+    - **Email Verification**: Users must verify their email before login
+    - **Role-Based Access Control**: Three roles — `customer`, `vendor`, `admin`
+
+    ### Complete Authentication Flow:
+
+    #### 1. **User Registration (Signup)**
+    - User registers with name, email, and password
+    - Verification email is sent automatically
+    - User cannot login until email is verified
+    - **Endpoint**: `POST /auth/signup`
+
+    #### 2. **Email Verification**
+    - User receives email with verification token (expires in 24 hours)
+    - Verification link: `POST /auth/verify-email/{token}`
+    - On successful verification, user is automatically logged in
+    - Access and refresh tokens are set as cookies
+
+    #### 3. **Login**
+    - User logs in with email and password
+    - **Automatic Responses**:
+      - `access_token` is set as a signed HTTP-only cookie (short-lived, e.g., 15 min)
+      - `refresh_token` is set as a signed HTTP-only cookie (long-lived, e.g., 7 days)
+    - Refresh token is stored in the database for validation
+    - User data is returned in response body
+    - **Endpoint**: `POST /auth/login`
+
+    #### 4. **Token Refresh**
+    - Access token expires after ~15 minutes
+    - Before expiration, call refresh endpoint to get a new access token
+    - **Automatic Process**:
+      - Old refresh token is invalidated in the database
+      - New access token is issued
+      - New refresh token is issued and stored in database
+    - **Endpoint**: `POST /auth/refresh-access-token`
+    - **Note**: No request body needed — token is read from cookie automatically
+
+    #### 5. **Logout**
+    - Clears the refresh token cookie
+    - Invalidates token in the database
+    - **Endpoint**: `POST /auth/logout`
+    - **Requires**: Authentication (access token cookie)
+
+    #### 6. **Password Reset Flow**
+    - User requests password reset: `POST /auth/forgot-password`
+    - Reset email is sent with token (expires in 1 hour)
+    - User resets password: `PATCH /auth/reset-password/{token}`
+
+    ### Security Details:
+    - Tokens are **httpOnly** — not accessible via JavaScript (prevents XSS attacks)
+    - Tokens are **signed** — cannot be tampered with
+    - Refresh token rotation — old tokens become invalid
+    - Email verification — prevents fake accounts
+    - Password hashing — uses bcrypt
+
+    ### Protected Endpoints:
+    Endpoints requiring authentication will have a `security` section with `cookieAuth: []`
+    The access token cookie is automatically sent with each request.
+
+    ### Example Frontend Implementation:
+    ```javascript
+    // After login/signup, cookies are set automatically by the server
+    // All subsequent requests automatically include the cookies
+
+    // Refresh token when access token expires (e.g., 401 response)
+    await fetch('/api/v1/auth/refresh-access-token', {
+      method: 'POST',
+      credentials: 'include' // Important: include cookies
+    })
+    
+    // Logout
+    await fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    })
+    ```
 
 servers:
   - url: /api/v1
@@ -36,6 +116,7 @@ components:
       type: apiKey
       in: cookie
       name: access_token
+      description: JWT access token stored in signed HTTP-only cookie
 
 paths:
   # 1. Auth
