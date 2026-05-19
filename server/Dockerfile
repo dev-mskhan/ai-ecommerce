@@ -16,6 +16,7 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+RUN npm run swagger-prod:build
 
 #  PRODUCTION 
 FROM node:${NODE_VERSION}-alpine AS production
